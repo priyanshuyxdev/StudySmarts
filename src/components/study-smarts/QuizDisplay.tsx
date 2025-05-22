@@ -44,29 +44,6 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
     });
     onQuizChange({ questions: updatedQuestions });
   };
-
-  const handleOptionTextChange = (qIndex: number, oIndex: number, value: string) => {
-    const oldOptionText = quiz.questions[qIndex].options[oIndex];
-    const currentQuestion = quiz.questions[qIndex];
-    
-    const updatedQuestions = quiz.questions.map((q, i) => {
-      if (i === qIndex) {
-        const updatedOptions = q.options.map((opt, optIdx) => (optIdx === oIndex ? value : opt));
-        const newAnswer = q.answer === oldOptionText ? value : q.answer;
-        return { ...q, options: updatedOptions, answer: newAnswer };
-      }
-      return q;
-    });
-    onQuizChange({ questions: updatedQuestions });
-
-    // Update feedback if the selected option text changed or if the answer text changed
-    if (userSelections[qIndex] === oldOptionText) { // if the edited option was selected
-        handleUserSelection(qIndex, value, currentQuestion.reason);
-    } else if (currentQuestion.answer === oldOptionText && userSelections[qIndex] !== undefined) { // if the edited option was the answer
-        // Re-evaluate feedback for the currently selected option
-        handleUserSelection(qIndex, userSelections[qIndex]!, currentQuestion.reason);
-    }
-  };
   
   const handleUserSelection = (qIndex: number, selectedOption: string, reasonForCorrect: string) => {
     setUserSelections(prev => ({...prev, [qIndex]: selectedOption}));
@@ -127,7 +104,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
       <CardHeader>
         <CardTitle className="flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" /> Generated Quiz</CardTitle>
         <CardDescription>
-          Review and edit the quiz questions and options. Select an option to see if it's correct and view the explanation.
+          Review and edit the quiz questions. Select an option to see if it's correct and view the explanation.
           Your score and results summary will appear after attempting all questions.
         </CardDescription>
       </CardHeader>
@@ -148,29 +125,32 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
             </div>
 
             <div className="space-y-2 mb-3">
-              <Label className="text-sm font-medium">Options (Click to select, editable text)</Label>
+              <Label className="text-sm font-medium">Options (Click to select)</Label>
               <RadioGroup 
                 value={userSelections[qIndex] || ""} 
                 onValueChange={(value) => handleUserSelection(qIndex, value, q.reason)}
                 aria-label={`Options for question ${qIndex + 1}`}
+                className="space-y-1"
               >
                 {q.options.map((option, oIndex) => (
-                  <div key={oIndex} className="flex items-center space-x-2 group">
-                    <RadioGroupItem value={option} id={`q${qIndex}-option${oIndex}`} />
-                    <Input
-                      id={`q${qIndex}-option-text-${oIndex}`}
-                      value={option}
-                      onChange={(e) => handleOptionTextChange(qIndex, oIndex, e.target.value)}
-                      className="flex-grow border-input focus:ring-primary group-hover:border-primary/50 transition-colors"
-                      aria-label={`Option ${oIndex + 1} for question ${qIndex + 1} text input`}
-                    />
+                  <Label 
+                    htmlFor={`q${qIndex}-option${oIndex}`} 
+                    key={oIndex}
+                    className={cn(
+                      "flex items-center space-x-3 p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors",
+                      userSelections[qIndex] === option && feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "",
+                      userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false ? "border-red-500 bg-red-50 dark:bg-red-900/30" : ""
+                    )}
+                  >
+                    <RadioGroupItem value={option} id={`q${qIndex}-option${oIndex}`} className="shrink-0" />
+                    <span className="flex-grow text-sm">{option}</span>
                     {userSelections[qIndex] === option && feedback[qIndex]?.isCorrect && (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
                     )}
                     {userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false && (
-                      <XCircle className="h-5 w-5 text-red-500" />
+                      <XCircle className="h-5 w-5 text-red-500 shrink-0" />
                     )}
-                  </div>
+                  </Label>
                 ))}
               </RadioGroup>
             </div>
@@ -199,8 +179,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
               </>
             )}
              <p className="text-xs text-muted-foreground mt-3">
-                Note: The system uses the AI-generated 'answer' and 'reason'. You can edit question and option text.
-                If you edit an option that was the designated answer, the answer updates.
+                Note: The system uses the AI-generated answer and reason. You can edit question text.
               </p>
             {qIndex < quiz.questions.length - 1 && <Separator className="my-6" />}
           </Card>
@@ -249,3 +228,4 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
     </Card>
   );
 }
+
