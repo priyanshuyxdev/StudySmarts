@@ -18,6 +18,7 @@ import { generateQuiz, type GenerateQuizOutput } from "@/ai/flows/generate-quiz"
 import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
 import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
+import ProgressChart from "./ProgressChart"; // Import the new ProgressChart component
 
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -338,11 +339,14 @@ export default function StudySmartsPage() {
         )}
         
         {summary && quiz && !isLoadingSummary && !isLoadingQuiz && (
-          <DownloadStudyAidsButton 
-            summary={summary} 
-            quiz={quiz} 
-            documentName={documentName || "StudyAids"}
-          />
+          <>
+            <DownloadStudyAidsButton 
+              summary={summary} 
+              quiz={quiz} 
+              documentName={documentName || "StudyAids"}
+            />
+            <ProgressChart /> 
+          </>
         )}
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center">
