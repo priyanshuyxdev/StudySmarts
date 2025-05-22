@@ -220,22 +220,22 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[120px]">Question #</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[90px] py-2 px-3 h-10">Q #</TableHead>
+                  <TableHead className="py-2 px-3 h-10">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {resultsSummary.map((result) => (
                   <TableRow key={result.questionNumber}>
-                    <TableCell className="font-medium">{result.questionNumber}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium py-2 px-3">{result.questionNumber}</TableCell>
+                    <TableCell className="py-2 px-3">
                       {result.isCorrect ? (
                         <span className="flex items-center text-green-600 dark:text-green-400">
-                          <CheckCircle className="mr-2 h-5 w-5" /> Correct
+                          <CheckCircle className="mr-1.5 h-4 w-4" /> Correct
                         </span>
                       ) : (
                         <span className="flex items-center text-red-600 dark:text-red-400">
-                          <XCircle className="mr-2 h-5 w-5" /> Incorrect
+                          <XCircle className="mr-1.5 h-4 w-4" /> Incorrect
                         </span>
                       )}
                     </TableCell>
