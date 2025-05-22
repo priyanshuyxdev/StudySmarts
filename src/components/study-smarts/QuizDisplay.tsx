@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, Edit3, CheckCircle, XCircle, Info } from "lucide-react"; // Replaced AlertCircle with Info for reason display
+import { HelpCircle, Edit3, CheckCircle, XCircle, Info } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -44,7 +44,6 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
     const updatedQuestions = quiz.questions.map((q, i) => {
       if (i === qIndex) {
         const updatedOptions = q.options.map((opt, optIdx) => (optIdx === oIndex ? value : opt));
-        // If the edited option was the answer, update the answer text as well
         const newAnswer = q.answer === oldOptionText ? value : q.answer;
         return { ...q, options: updatedOptions, answer: newAnswer };
       }
@@ -52,11 +51,10 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
     });
     onQuizChange({ questions: updatedQuestions });
 
-    // If this option was selected by the user, re-evaluate feedback
     if (userSelections[qIndex] === oldOptionText) {
-        handleUserSelection(qIndex, value, currentQuestion.reason); // Pass reason here
+        handleUserSelection(qIndex, value, currentQuestion.reason);
     } else if (currentQuestion.answer === oldOptionText && userSelections[qIndex] !== undefined) {
-        handleUserSelection(qIndex, userSelections[qIndex]!, currentQuestion.reason); // Pass reason here
+        handleUserSelection(qIndex, userSelections[qIndex]!, currentQuestion.reason);
     }
   };
   
@@ -65,6 +63,15 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
     const isCorrect = quiz.questions[qIndex].answer === selectedOption;
     setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: reasonForCorrect }}));
   };
+
+  const score = useMemo(() => {
+    const correctAnswers = Object.values(feedback).filter(f => f?.isCorrect).length;
+    const totalQuestions = quiz.questions.length;
+    return {
+      correct: correctAnswers,
+      total: totalQuestions,
+    };
+  }, [feedback, quiz.questions]);
 
 
   if (isLoading) {
@@ -97,6 +104,13 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
         <CardDescription>
           Review and edit the quiz questions and options. Select an option to see if it's correct and view the explanation.
         </CardDescription>
+        {score.total > 0 && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <p className="text-lg font-semibold text-foreground">
+              Score: {score.correct} / {score.total}
+            </p>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {quiz.questions.map((q, qIndex) => (
@@ -176,3 +190,4 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
     </Card>
   );
 }
+
