@@ -25,21 +25,23 @@ export async function generateCustomQuiz(input: GenerateCustomQuizInput): Promis
   return generateCustomQuizFlow(input);
 }
 
-const generateCustomQuizPrompt = ai.definePrompt({
-  name: 'generateCustomQuizPrompt',
-  input: {schema: GenerateCustomQuizInputSchema},
-  output: {schema: z.object({ // Re-using the structure from GenerateQuizOutputSchema
+const GenerateCustomQuizOutputSchemaFromOriginal = z.object({ // Re-using the structure from GenerateQuizOutputSchema
     questions: z
       .array(
         z.object({
           question: z.string().describe('The question text.'),
           options: z.array(z.string()).length(4).describe('The multiple-choice options (exactly 4).'),
           answer: z.string().describe('The correct answer (must be one of the options).'),
-          reason: z.string().describe('A brief explanation of why the answer is correct.'),
+          reason: z.string().describe('A detailed and comprehensive explanation of why the answer is correct, clarifying the concept.'),
         })
       )
       .describe('The generated quiz questions.'),
-  })},
+  });
+
+const generateCustomQuizPrompt = ai.definePrompt({
+  name: 'generateCustomQuizPrompt',
+  input: {schema: GenerateCustomQuizInputSchema},
+  output: {schema: GenerateCustomQuizOutputSchemaFromOriginal},
   prompt: `You are an expert in generating educational quizzes.
 
   Given the following topic and desired number of questions, generate a multiple-choice quiz.
@@ -50,7 +52,7 @@ const generateCustomQuizPrompt = ai.definePrompt({
   1. Be relevant to the provided topic.
   2. Have exactly 4 multiple-choice options.
   3. Have one clearly correct answer among the options.
-  4. Include a brief reason explaining why the answer is correct.
+  4. Include a detailed and comprehensive reason explaining why the answer is correct and clarifying the underlying concept.
 
   Format your response as a JSON object with a 'questions' field. Each item in the 'questions' array should be an object with 'question', 'options', 'answer', and 'reason' fields.
   The 'options' field should be an array of 4 strings.
@@ -70,18 +72,7 @@ const generateCustomQuizFlow = ai.defineFlow(
   {
     name: 'generateCustomQuizFlow',
     inputSchema: GenerateCustomQuizInputSchema,
-    outputSchema: z.object({ // Re-using the structure from GenerateQuizOutputSchema
-    questions: z
-      .array(
-        z.object({
-          question: z.string().describe('The question text.'),
-          options: z.array(z.string()).length(4).describe('The multiple-choice options (exactly 4).'),
-          answer: z.string().describe('The correct answer (must be one of the options).'),
-          reason: z.string().describe('A brief explanation of why the answer is correct.'),
-        })
-      )
-      .describe('The generated quiz questions.'),
-  }),
+    outputSchema: GenerateCustomQuizOutputSchemaFromOriginal,
   },
   async (input: GenerateCustomQuizInput) => {
     const {output} = await generateCustomQuizPrompt(input);

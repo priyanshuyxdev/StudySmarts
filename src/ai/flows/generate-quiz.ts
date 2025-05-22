@@ -25,7 +25,7 @@ const GenerateQuizOutputSchema = z.object({
         question: z.string().describe('The question text.'),
         options: z.array(z.string()).describe('The multiple-choice options (exactly 4).'),
         answer: z.string().describe('The correct answer (must be one of the options).'),
-        reason: z.string().describe('A brief explanation of why the answer is correct.'),
+        reason: z.string().describe('A detailed and comprehensive explanation of why the answer is correct, clarifying the concept.'),
       })
     )
     .describe('The generated quiz questions.'),
@@ -44,7 +44,7 @@ const generateQuizPrompt = ai.definePrompt({
 
   Given the following summary of a document, generate a quiz with at least 10 multiple-choice questions, and up to 15 if the content is rich enough, to test the user's understanding of the material.
   Each question should have exactly 4 options, one of which is the correct answer.
-  For each question, provide the question text, the 4 options, the correct answer (which must exactly match one of the options), and a brief reason explaining why that answer is correct.
+  For each question, provide the question text, the 4 options, the correct answer (which must exactly match one of the options), and a detailed and comprehensive reason explaining why that answer is correct and clarifying the underlying concept.
 
   Summary: {{{summary}}}
 

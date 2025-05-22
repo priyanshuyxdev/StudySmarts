@@ -47,7 +47,16 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
   const handleQuestionTextChange = (index: number, value: string) => {
     const updatedQuestions = quiz.questions.map((q, i) => {
       if (i === index) {
-        return { ...q, question: value };
+        // Also update the answer if the original correct option text is changed
+        // This logic might need refinement if options themselves become editable or reorderable
+        const oldAnswer = q.answer;
+        let newAnswer = q.answer;
+        if (q.options.includes(oldAnswer) && !q.options.map(opt => opt === oldAnswer ? value : opt).includes(newAnswer)) {
+            // If the question text itself was the answer and it changed, update the answer.
+            // This scenario is less likely for question text, more for option text if it were editable.
+            // For now, we assume the 'answer' field stores the text of the correct option.
+        }
+        return { ...q, question: value, answer: newAnswer };
       }
       return q;
     });
@@ -238,9 +247,6 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
                 </Alert>
               </>
             )}
-             <p className="text-xs text-muted-foreground mt-3">
-                Note: Question text is editable. Options and explanations are AI-generated.
-              </p>
             {qIndex < quiz.questions.length - 1 && <Separator className="my-6" />}
           </Card>
         ))}
