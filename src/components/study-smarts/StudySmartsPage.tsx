@@ -2,8 +2,8 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useState } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,20 +19,22 @@ import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
 import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
 
-// NOTE: For actual PDF text extraction, a library like pdf.js (Mozilla) would be needed for client-side processing,
-// or a backend service for server-side processing. This implementation simulates extraction.
+import * as pdfjsLib from 'pdfjs-dist';
 
-const SIMULATED_PDF_TEXT_TEMPLATE = (fileName: string) => `Content from ${fileName}:
+// Set workerSrc for pdfjs-dist. This tells pdf.js where to load its worker script from.
+// Using a CDN version. Ensure the version matches the installed pdfjs-dist version.
+// You can find the installed version in package.json.
+// For example, if "pdfjs-dist": "^4.4.168", use that version in the URL.
+const PDFJS_VERSION = pdfjsLib.version; // Gets the version from the imported library
+const PDFJS_WORKER_SRC = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.mjs`;
 
-This document provides a comprehensive overview of modern software development practices. Key topics include Agile methodologies, DevOps principles, version control with Git, continuous integration and continuous deployment (CI/CD) pipelines, and the importance of automated testing. It also delves into popular architectural patterns like microservices and serverless computing, highlighting their benefits and drawbacks. 
-
-Furthermore, the document emphasizes the significance of code quality, maintainability, and collaboration in software projects. Several case studies are presented to illustrate these concepts in real-world scenarios. The final sections explore emerging trends such as AI-assisted development and low-code/no-code platforms, offering insights into the future of software engineering. This content is detailed enough to generate a comprehensive summary and a quiz with multiple questions.
-`;
 
 export default function StudySmartsPage() {
   const [documentName, setDocumentName] = useState<string | null>(null);
   const [documentText, setDocumentText] = useState<string>("");
-  const [isPdfUploaded, setIsPdfUploaded] = useState<boolean>(false);
+  const [isFileUploaded, setIsFileUploaded] = useState<boolean>(false); // Tracks if any file is selected
+  const [isPdfProcessing, setIsPdfProcessing] = useState<boolean>(false); // Tracks if PDF processing is ongoing
+
   const [summary, setSummary] = useState<SummarizeDocumentOutput | null>(null);
   const [quiz, setQuiz] = useState<GenerateQuizOutput | null>(null);
   
@@ -42,43 +44,90 @@ export default function StudySmartsPage() {
 
   const { toast } = useToast();
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
+  }, []);
+
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setDocumentName(file.name);
+      setIsFileUploaded(true);
+      setError(null);
+      setDocumentText(""); // Clear previous text
+      setSummary(null); // Clear previous summary
+      setQuiz(null); // Clear previous quiz
+
       if (file.type === "application/pdf") {
-        setDocumentName(file.name);
-        // Simulate PDF text extraction
-        setDocumentText(SIMULATED_PDF_TEXT_TEMPLATE(file.name));
-        setIsPdfUploaded(true);
-        setError(null);
+        setIsPdfProcessing(true);
         toast({
-          title: "PDF Processed (Simulated)",
-          description: `Text has been simulated for "${file.name}". The content is ready for summarization.`,
+          title: "Processing PDF...",
+          description: `Extracting text from "${file.name}". Please wait.`,
         });
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          let fullText = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            fullText += textContent.items.map((item: any) => item.str).join(" ") + "\n";
+          }
+          setDocumentText(fullText);
+          toast({
+            title: "PDF Processed Successfully",
+            description: `Text extracted from "${file.name}". Ready for summarization.`,
+          });
+        } catch (pdfError: any) {
+          console.error("PDF processing error:", pdfError);
+          setError(`Failed to process PDF: ${pdfError.message || String(pdfError)}. Please try again or paste content manually.`);
+          toast({
+            variant: "destructive",
+            title: "PDF Processing Failed",
+            description: `Could not extract text from "${file.name}".`,
+          });
+          setDocumentText(""); // Clear text if PDF processing fails
+        } finally {
+          setIsPdfProcessing(false);
+        }
+      } else if (file.type.startsWith("text/")) {
+         // Handle plain text files
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          setDocumentText(text);
+           toast({
+            title: "Text File Loaded",
+            description: `Content from "${file.name}" loaded. Ready for summarization.`,
+          });
+        };
+        reader.onerror = (e) => {
+          console.error("File reading error:", e);
+          setError("Failed to read the text file.");
+          toast({ variant: "destructive", title: "File Reading Error", description: "Could not read the selected text file."});
+        }
+        reader.readAsText(file);
       } else {
-        setDocumentName(file.name); // Keep name for non-PDFs if user still wants to paste
-        setDocumentText(""); // Clear text area for manual paste
-        setIsPdfUploaded(false);
-        setError("Non-PDF file selected. Please paste its content below or select a PDF for automatic (simulated) extraction.");
+        setDocumentText(""); 
+        setError("Unsupported file type. Please upload a PDF or a plain text file (.txt, .md), or paste content manually.");
         toast({
-          variant: "default", // Not destructive, just informational
-          title: "Non-PDF File Selected",
-          description: "Please paste content manually or upload a PDF.",
+          variant: "default", 
+          title: "Unsupported File Type",
+          description: "Please upload PDF/text or paste content manually.",
         });
       }
     } else {
-      // Reset if no file is selected (e.g., user clears file input)
       setDocumentName(null);
       setDocumentText("");
-      setIsPdfUploaded(false);
+      setIsFileUploaded(false);
       setError(null);
     }
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!documentText.trim()) {
-      setError("Document content cannot be empty. Please upload a PDF or paste text.");
+    if (!documentText.trim() && !isPdfProcessing) { // Only show error if not currently processing a PDF
+      setError("Document content cannot be empty. Please upload a file or paste text.");
       toast({
         variant: "destructive",
         title: "Empty Content",
@@ -86,6 +135,15 @@ export default function StudySmartsPage() {
       });
       return;
     }
+    if (isPdfProcessing) {
+      setError("Please wait for the PDF processing to complete.");
+      toast({
+        title: "Processing PDF",
+        description: "Please wait for text extraction to finish before generating study aids.",
+      });
+      return;
+    }
+
     setError(null);
     setSummary(null);
     setQuiz(null);
@@ -140,9 +198,10 @@ export default function StudySmartsPage() {
   };
   
   const totalLoadingProgress = () => {
-    if (isLoadingSummary && !summary) return 25; // Summarizing
-    if (isLoadingSummary && summary && isLoadingQuiz) return 50; // Summarized, starting quiz
-    if (!isLoadingSummary && summary && isLoadingQuiz) return 75; // Generating quiz
+    if (isPdfProcessing) return 15;
+    if (isLoadingSummary && !summary) return 25 + (isPdfProcessing ? 10 : 0) ; // Summarizing
+    if (isLoadingSummary && summary && isLoadingQuiz) return 50 + (isPdfProcessing ? 10 : 0); // Summarized, starting quiz
+    if (!isLoadingSummary && summary && isLoadingQuiz) return 75 + (isPdfProcessing ? 10 : 0); // Generating quiz
     if (!isLoadingSummary && !isLoadingQuiz && summary && quiz) return 100; // Done
     return 0;
   }
@@ -155,7 +214,7 @@ export default function StudySmartsPage() {
           <h1 className="text-4xl font-bold text-foreground">StudySmarts</h1>
         </div>
         <p className="text-muted-foreground">
-          Upload PDF for (simulated) auto-extraction, or paste text. Get AI summaries & quizzes!
+          Upload your PDF or text file, or paste content. Get AI summaries & quizzes!
         </p>
       </header>
 
@@ -167,47 +226,68 @@ export default function StudySmartsPage() {
               Upload Document &amp; Add Content
             </CardTitle>
             <CardDescription>
-              Select a PDF for (simulated) automatic text extraction. For other file types, please paste the content manually.
+              Select a PDF or text file for automatic text extraction, or paste content manually.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="pdf-upload" className="text-sm font-medium text-foreground">Select File (PDF recommended)</label>
-                <Input id="pdf-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} className="file:text-primary file:font-semibold"/>
+                <label htmlFor="file-upload" className="text-sm font-medium text-foreground">Select File (PDF or .txt, .md)</label>
+                <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} className="file:text-primary file:font-semibold"/>
                 {documentName && (
                   <p className="text-sm text-muted-foreground flex items-center mt-1">
                     <FileText size={16} className="mr-1" /> Selected file: {documentName}
-                    {isPdfUploaded && " (Text auto-populated below)"}
+                    {isPdfProcessing && " (Processing...)"}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="document-text" className="text-sm font-medium text-foreground">
-                  {isPdfUploaded ? "Document Content (from PDF - read-only)" : "Paste Document Content"}
+                  Document Content
                 </label>
                 <Textarea
                   id="document-text"
-                  placeholder={isPdfUploaded ? "Text from PDF is shown here." : "Paste the text content of your document here..."}
+                  placeholder={
+                    isPdfProcessing 
+                      ? "Extracting text from PDF..." 
+                      : isFileUploaded && documentText
+                        ? "Text from uploaded file."
+                        : "Paste the text content of your document here, or upload a file."
+                  }
                   value={documentText}
-                  onChange={(e) => setDocumentText(e.target.value)}
+                  onChange={(e) => {
+                    setDocumentText(e.target.value);
+                    // If user types, assume they are no longer relying on file upload for content
+                    // or want to override/add to it.
+                    // setIsFileUploaded(false); // Or handle this based on desired UX
+                  }}
                   rows={10}
                   className="border-input focus:ring-primary"
-                  readOnly={isPdfUploaded}
-                  aria-readonly={isPdfUploaded}
+                  readOnly={isPdfProcessing} 
+                  aria-readonly={isPdfProcessing}
                 />
-                 {isPdfUploaded && (
+                 {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && !documentText && !error && (
                     <Alert variant="default" className="mt-2">
                         <Info className="h-4 w-4" />
-                        <AlertTitle>PDF Text Simulated</AlertTitle>
+                        <AlertTitle>PDF Ready</AlertTitle>
                         <AlertDescription>
-                            The text above is a simulation of PDF extraction. For a full application, a PDF parsing library (e.g., pdf.js) would be integrated.
+                            PDF text has been extracted. You can now generate study aids or edit the text below if needed.
+                        </AlertDescription>
+                    </Alert>
+                )}
+                 {isFileUploaded && isPdfProcessing && (
+                    <Alert variant="default" className="mt-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <AlertTitle>PDF Processing</AlertTitle>
+                        <AlertDescription>
+                            Extracting text from the PDF. This may take a moment.
                         </AlertDescription>
                     </Alert>
                 )}
               </div>
               {error && (
                 <Alert variant="destructive">
+                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
@@ -215,16 +295,16 @@ export default function StudySmartsPage() {
               <Button 
                 type="submit" 
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isLoadingSummary || isLoadingQuiz}
+                disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing}
               >
-                {(isLoadingSummary || isLoadingQuiz) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Generate Study Aids
+                {(isLoadingSummary || isLoadingQuiz || isPdfProcessing) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {(isPdfProcessing) ? 'Processing File...' : 'Generate Study Aids'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {(isLoadingSummary || isLoadingQuiz) && (
+        {(isLoadingSummary || isLoadingQuiz || isPdfProcessing) && (
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Processing...</CardTitle>
@@ -232,8 +312,9 @@ export default function StudySmartsPage() {
             <CardContent>
               <Progress value={totalLoadingProgress()} className="w-full" />
               <p className="text-center text-muted-foreground mt-2">
-                {isLoadingSummary && !summary ? "Generating summary..." : ""}
-                {summary && isLoadingQuiz ? "Generating quiz..." : ""}
+                {isPdfProcessing ? "Extracting text from PDF..." : ""}
+                {isLoadingSummary && !summary && !isPdfProcessing ? "Generating summary..." : ""}
+                {summary && isLoadingQuiz && !isPdfProcessing ? "Generating quiz..." : ""}
               </p>
             </CardContent>
           </Card>

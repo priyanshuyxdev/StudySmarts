@@ -17,8 +17,8 @@ const SummarizeDocumentInputSchema = z.object({
 export type SummarizeDocumentInput = z.infer<typeof SummarizeDocumentInputSchema>;
 
 const SummarizeDocumentOutputSchema = z.object({
-  summary: z.string().describe('A concise summary of the document.'),
-  sectionSummaries: z.string().optional().describe('Section by section summaries of the document, if applicable.'),
+  summary: z.string().describe('A detailed and comprehensive summary of the document, potentially using bullet points for clarity.'),
+  sectionSummaries: z.string().optional().describe('Section by section summaries of the document, if applicable, also detailed and with bullet points.'),
 });
 export type SummarizeDocumentOutput = z.infer<typeof SummarizeDocumentOutputSchema>;
 
@@ -30,12 +30,14 @@ const prompt = ai.definePrompt({
   name: 'summarizeDocumentPrompt',
   input: {schema: SummarizeDocumentInputSchema},
   output: {schema: SummarizeDocumentOutputSchema},
-  prompt: `You are an expert summarizer.  Please provide a concise summary of the following document.
+  prompt: `You are an expert summarizer. Please provide a **detailed** summary of the following document.
+Where appropriate, use **bullet points** to list key information, steps, or components described in the document.
+Ensure the summary is comprehensive and captures the main arguments, findings, and conclusions.
 
 Document:
-{{documentText}}
+{{{documentText}}}
 
-Additionally, if the document is sufficiently long (more than 500 words), provide a section-by-section summary of the document as well.
+Additionally, if the document is sufficiently long (more than 500 words), provide a section-by-section summary of the document as well, also using detailed explanations and bullet points where suitable.
 `,
 });
 
