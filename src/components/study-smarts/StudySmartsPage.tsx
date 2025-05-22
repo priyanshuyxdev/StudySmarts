@@ -240,26 +240,90 @@ export default function StudySmartsPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 md:p-8 bg-background">
-      <header className="w-full max-w-4xl mb-8 text-center">
-        <div className="flex items-center justify-center mb-2">
-          <BookOpenText size={48} className="text-primary mr-3" />
-          <h1 className="text-4xl font-bold text-foreground">StudySmarts</h1>
+    <div className="min-h-screen flex flex-col items-center bg-background">
+      <header className="w-full bg-card shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto py-3 md:py-4 flex flex-col items-center text-center">
+          <div className="flex items-center justify-center">
+            <BookOpenText size={32} className="text-primary mr-2 md:mr-3" />
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">StudySmarts</h1>
+          </div>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1">
+            Your AI study assistant for summaries & quizzes!
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Upload your PDF/text, or create custom quizzes by topic. Get AI summaries & quizzes!
-        </p>
       </header>
 
-      <main className="w-full max-w-4xl space-y-6">
+      <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
+        <Card className="shadow-lg border border-purple-300 dark:border-purple-700">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Wand2 className="mr-2 h-6 w-6 text-purple-500" />
+              1. Create Custom Quiz by Topic
+            </CardTitle>
+            <CardDescription>
+              Enter a topic or phrase to generate a quiz without uploading a document.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleGenerateCustomQuiz} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="custom-topic" className="text-sm font-medium text-foreground">Enter Topic/Phrase</Label>
+                <Input 
+                  id="custom-topic" 
+                  placeholder="e.g., 'The Solar System' or 'Photosynthesis'"
+                  value={customQuizTopic}
+                  onChange={(e) => {
+                    setCustomQuizTopic(e.target.value);
+                    if (!isCustomQuizMode) { 
+                        resetCustomQuizState(); 
+                        setCustomQuizTopic(e.target.value); 
+                    }
+                  }}
+                  className="border-input focus:ring-purple-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Number of Questions</Label>
+                <RadioGroup 
+                  value={String(customNumQuestions)} 
+                  onValueChange={(value) => {
+                    setCustomNumQuestions(Number(value));
+                    if (!isCustomQuizMode) resetCustomQuizState();
+                  }} 
+                  className="flex flex-wrap gap-x-4 gap-y-2"
+                >
+                  {[5, 10, 15, 20].map(num => (
+                    <div key={num} className="flex items-center space-x-2">
+                      <RadioGroupItem value={String(num)} id={`num-${num}`} />
+                      <Label htmlFor={`num-${num}`} className="cursor-pointer">{num}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full text-white font-semibold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
+                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary}
+              >
+                {isLoadingQuiz && isCustomQuizMode ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <Wand2 className="mr-2 h-5 w-5" />
+                )}
+                Generate Custom Quiz
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center">
               <UploadCloud className="mr-2 h-6 w-6 text-primary" />
-              1. Process Document
+              2. Process Document
             </CardTitle>
             <CardDescription>
-              Upload a PDF/text file for summary and quiz generation based on its content.
+              Alternatively, upload a PDF/text file for summary and quiz generation based on its content.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -325,64 +389,6 @@ export default function StudySmartsPage() {
             </form>
           </CardContent>
         </Card>
-
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Wand2 className="mr-2 h-6 w-6 text-accent" />
-              2. Create Custom Quiz by Topic
-            </CardTitle>
-            <CardDescription>
-              Enter a topic or phrase to generate a quiz without uploading a document.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleGenerateCustomQuiz} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="custom-topic" className="text-sm font-medium text-foreground">Enter Topic/Phrase</Label>
-                <Input 
-                  id="custom-topic" 
-                  placeholder="e.g., 'The Solar System' or 'Photosynthesis'"
-                  value={customQuizTopic}
-                  onChange={(e) => {
-                    setCustomQuizTopic(e.target.value);
-                    if (!isCustomQuizMode) { // If user types here, switch to custom mode
-                        resetCustomQuizState(); // Resets states for custom quiz mode
-                        setCustomQuizTopic(e.target.value); // re-set topic as reset clears it
-                    }
-                  }}
-                  className="border-input focus:ring-accent"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Number of Questions</Label>
-                <RadioGroup 
-                  value={String(customNumQuestions)} 
-                  onValueChange={(value) => {
-                    setCustomNumQuestions(Number(value));
-                    if (!isCustomQuizMode) resetCustomQuizState();
-                  }} 
-                  className="flex space-x-2 md:space-x-4"
-                >
-                  {[5, 10, 15, 20].map(num => (
-                    <div key={num} className="flex items-center space-x-2">
-                      <RadioGroupItem value={String(num)} id={`num-${num}`} />
-                      <Label htmlFor={`num-${num}`} className="cursor-pointer">{num}</Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary}
-              >
-                {isLoadingQuiz && isCustomQuizMode && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Generate Custom Quiz
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
         
         {error && (
           <Alert variant="destructive" className="my-4">
@@ -418,9 +424,9 @@ export default function StudySmartsPage() {
 
         {quiz && summary && !isLoadingQuiz && (
           <div className="mt-6">
-             <CardHeader className="px-0 pt-0">
-                <CardTitle className="flex items-center text-2xl">
-                    <HelpCircle className="mr-2 h-7 w-7 text-primary" /> 
+             <CardHeader className="px-0 pt-0 mb-2">
+                <CardTitle className="flex items-center text-xl md:text-2xl">
+                    <HelpCircle className="mr-2 h-6 w-6 md:h-7 md:w-7 text-primary" /> 
                     {isCustomQuizMode ? `Quiz on "${customQuizTopic}"` : "Quiz from Document"}
                 </CardTitle>
              </CardHeader>
@@ -442,10 +448,12 @@ export default function StudySmartsPage() {
           />
         )}
       </main>
-      <footer className="w-full max-w-4xl mt-12 text-center">
+      <footer className="w-full max-w-4xl mt-12 text-center p-4">
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>
     </div>
   );
 }
 
+
+    
