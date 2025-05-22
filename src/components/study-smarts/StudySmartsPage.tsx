@@ -328,11 +328,12 @@ export default function StudySmartsPage() {
           />
         )}
 
-        {quiz && !isLoadingQuiz && (
+        {quiz && summary && !isLoadingQuiz && ( // Ensure summary is available for hints
           <QuizDisplay 
             quiz={quiz} 
             onQuizChange={handleQuizChange} 
             isLoading={isLoadingQuiz}
+            documentSummary={summary.summary} // Pass summary for hints
           />
         )}
         
