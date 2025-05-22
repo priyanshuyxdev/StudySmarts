@@ -23,8 +23,9 @@ const GenerateQuizOutputSchema = z.object({
     .array(
       z.object({
         question: z.string().describe('The question text.'),
-        options: z.array(z.string()).describe('The multiple-choice options.'),
-        answer: z.string().describe('The correct answer.'),
+        options: z.array(z.string()).describe('The multiple-choice options (exactly 4).'),
+        answer: z.string().describe('The correct answer (must be one of the options).'),
+        reason: z.string().describe('A brief explanation of why the answer is correct.'),
       })
     )
     .describe('The generated quiz questions.'),
@@ -42,13 +43,15 @@ const generateQuizPrompt = ai.definePrompt({
   prompt: `You are an expert in generating quizzes from text.
 
   Given the following summary of a document, generate a quiz with at least 10 multiple-choice questions, and up to 15 if the content is rich enough, to test the user's understanding of the material.
-  Each question should have 4 options, one of which is the correct answer.
+  Each question should have exactly 4 options, one of which is the correct answer.
+  For each question, provide the question text, the 4 options, the correct answer (which must exactly match one of the options), and a brief reason explaining why that answer is correct.
 
   Summary: {{{summary}}}
 
-  Format your response as a JSON object with a 'questions' field. Each question should have a 'question', 'options', and 'answer' field.
-  The 'options' field should be an array of 4 strings, and the 'answer' field should be the correct answer from the options.
-  `,config: {
+  Format your response as a JSON object with a 'questions' field. Each item in the 'questions' array should be an object with 'question', 'options', 'answer', and 'reason' fields.
+  The 'options' field should be an array of 4 strings.
+  `,
+  config: {
     safetySettings: [
       {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
@@ -69,3 +72,4 @@ const generateQuizFlow = ai.defineFlow(
     return output!;
   }
 );
+

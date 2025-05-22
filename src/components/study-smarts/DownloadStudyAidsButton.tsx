@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -16,17 +17,19 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
   const { toast } = useToast();
 
   const handleDownload = () => {
-    // Placeholder for actual PDF generation logic
-    console.log("Downloading summary and quiz for:", documentName);
+    // Actual PDF generation would require a library like jsPDF and html2canvas or a server-side solution.
+    // This is a placeholder for now.
+    console.log("Attempting to download summary and quiz as PDF for:", documentName);
     console.log("Summary:", summary);
     console.log("Quiz:", quiz);
     
     toast({
-      title: "Download Initiated (Placeholder)",
-      description: `PDF generation for "${documentName}" will be implemented here.`,
+      title: "PDF Download (Placeholder)",
+      description: `PDF generation for "${documentName}" is planned. Downloading as .txt for now.`,
+      duration: 5000,
     });
 
-    // Example of what might be generated (plain text for now)
+    // Generate plain text content for now
     let content = `Document: ${documentName}\n\n`;
     content += "SUMMARY\n";
     content += "=======\n";
@@ -42,14 +45,16 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
       q.options.forEach((opt, oIdx) => {
         content += `  ${String.fromCharCode(97 + oIdx)}) ${opt}\n`;
       });
-      content += `Answer: ${q.answer}\n\n`;
+      content += `Correct Answer: ${q.answer}\n`;
+      content += `Reason: ${q.reason}\n\n`;
     });
 
-    // Simulate file download
+    // Simulate file download as .txt
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${documentName.replace('.pdf', '')}_StudyAids.txt`;
+    // Even though we want PDF, for now, it's TXT. Filename reflects current reality.
+    link.download = `${documentName.replace(/\.[^/.]+$/, "") || "StudyAids"}_StudyAids.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -60,10 +65,10 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
     <Button 
         onClick={handleDownload} 
         className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
-        aria-label="Download summary and quiz"
+        aria-label="Download summary and quiz as PDF"
     >
       <Download className="mr-2 h-5 w-5" />
-      Download Summary & Quiz
+      Download Summary & Quiz as PDF
     </Button>
   );
 }

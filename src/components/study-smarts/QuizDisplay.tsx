@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, Edit3, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { HelpCircle, Edit3, CheckCircle, XCircle, Info } from "lucide-react"; // Replaced AlertCircle with Info for reason display
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface QuizDisplayProps {
   quiz: GenerateQuizOutput;
@@ -19,9 +20,8 @@ interface QuizDisplayProps {
 
 export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDisplayProps) {
   const [userSelections, setUserSelections] = useState<{[key: number]: string | undefined}>({});
-  const [feedback, setFeedback] = useState<{[key: number]: 'correct' | 'incorrect' | undefined}>({});
+  const [feedback, setFeedback] = useState<{[key: number]: {isCorrect: boolean, reason?: string} | undefined}>({});
 
-  // Reset local state if quiz prop changes (e.g., new quiz generated)
   useEffect(() => {
     setUserSelections({});
     setFeedback({});
@@ -39,6 +39,8 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
 
   const handleOptionTextChange = (qIndex: number, oIndex: number, value: string) => {
     const oldOptionText = quiz.questions[qIndex].options[oIndex];
+    const currentQuestion = quiz.questions[qIndex];
+    
     const updatedQuestions = quiz.questions.map((q, i) => {
       if (i === qIndex) {
         const updatedOptions = q.options.map((opt, optIdx) => (optIdx === oIndex ? value : opt));
@@ -52,43 +54,16 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
 
     // If this option was selected by the user, re-evaluate feedback
     if (userSelections[qIndex] === oldOptionText) {
-        // Temporarily update user selection to the new text to re-trigger feedback
-        handleUserSelection(qIndex, value);
-    } else if (quiz.questions[qIndex].answer === oldOptionText && userSelections[qIndex] !== undefined) {
-        // If the *correct answer* was this option and user had selected something else,
-        // their feedback might change based on the new text of the correct answer
-        handleUserSelection(qIndex, userSelections[qIndex]!);
+        handleUserSelection(qIndex, value, currentQuestion.reason); // Pass reason here
+    } else if (currentQuestion.answer === oldOptionText && userSelections[qIndex] !== undefined) {
+        handleUserSelection(qIndex, userSelections[qIndex]!, currentQuestion.reason); // Pass reason here
     }
-
-
   };
   
-  const handleCorrectAnswerTextChange = (qIndex: number, newAnswerText: string) => {
-    const updatedQuestions = quiz.questions.map((q, i) => {
-      if (i === qIndex) {
-        return { ...q, answer: newAnswerText };
-      }
-      return q;
-    });
-    onQuizChange({ questions: updatedQuestions });
-
-    // Re-evaluate feedback for this question if a user selection exists
-    if (userSelections[qIndex] !== undefined) {
-      if (newAnswerText === userSelections[qIndex]) {
-        setFeedback(prev => ({...prev, [qIndex]: 'correct'}));
-      } else {
-        setFeedback(prev => ({...prev, [qIndex]: 'incorrect'}));
-      }
-    }
-  };
-
-  const handleUserSelection = (qIndex: number, selectedOption: string) => {
+  const handleUserSelection = (qIndex: number, selectedOption: string, reasonForCorrect: string) => {
     setUserSelections(prev => ({...prev, [qIndex]: selectedOption}));
-    if (quiz.questions[qIndex].answer === selectedOption) {
-      setFeedback(prev => ({...prev, [qIndex]: 'correct'}));
-    } else {
-      setFeedback(prev => ({...prev, [qIndex]: 'incorrect'}));
-    }
+    const isCorrect = quiz.questions[qIndex].answer === selectedOption;
+    setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: reasonForCorrect }}));
   };
 
 
@@ -120,7 +95,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
       <CardHeader>
         <CardTitle className="flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" /> Generated Quiz</CardTitle>
         <CardDescription>
-          Review and edit the quiz. Select an option for any question to see if it's correct. The "Correct Answer" field defines the actual right answer for editing purposes.
+          Review and edit the quiz questions and options. Select an option to see if it's correct and view the explanation.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -143,7 +118,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
               <Label className="text-sm font-medium">Options (Click to select, editable text)</Label>
               <RadioGroup 
                 value={userSelections[qIndex] || ""} 
-                onValueChange={(value) => handleUserSelection(qIndex, value)}
+                onValueChange={(value) => handleUserSelection(qIndex, value, q.reason)}
                 aria-label={`Options for question ${qIndex + 1}`}
               >
                 {q.options.map((option, oIndex) => (
@@ -156,10 +131,10 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
                       className="flex-grow border-input focus:ring-primary group-hover:border-primary/50 transition-colors"
                       aria-label={`Option ${oIndex + 1} for question ${qIndex + 1} text input`}
                     />
-                    {userSelections[qIndex] === option && feedback[qIndex] === 'correct' && (
+                    {userSelections[qIndex] === option && feedback[qIndex]?.isCorrect && (
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     )}
-                    {userSelections[qIndex] === option && feedback[qIndex] === 'incorrect' && (
+                    {userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false && (
                       <XCircle className="h-5 w-5 text-red-500" />
                     )}
                   </div>
@@ -168,30 +143,32 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading }: QuizDispl
             </div>
             
             {feedback[qIndex] && (
-              <div className={cn(
-                "mt-2 p-2 rounded-md text-sm",
-                feedback[qIndex] === 'correct' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              )}>
-                {feedback[qIndex] === 'correct' ? "Your selection is correct!" : "Your selection is incorrect."}
-              </div>
+              <>
+                <Alert 
+                  variant={feedback[qIndex]?.isCorrect ? "default" : "destructive"} 
+                  className={cn(
+                    "mt-2",
+                    feedback[qIndex]?.isCorrect ? "bg-green-100 border-green-300" : "bg-red-100 border-red-300"
+                  )}
+                >
+                  {feedback[qIndex]?.isCorrect ? <CheckCircle className="h-4 w-4 text-green-700" /> : <XCircle className="h-4 w-4 text-red-700" />}
+                  <AlertTitle className={feedback[qIndex]?.isCorrect ? "text-green-700" : "text-red-700"}>
+                    {feedback[qIndex]?.isCorrect ? "Correct!" : "Incorrect."}
+                  </AlertTitle>
+                </Alert>
+                <Alert variant="default" className="mt-2 bg-blue-50 border-blue-300">
+                  <Info className="h-4 w-4 text-blue-700" />
+                  <AlertTitle className="text-blue-700">Explanation</AlertTitle>
+                  <AlertDescription className="text-blue-700">
+                    {feedback[qIndex]?.reason || "No reason provided."}
+                  </AlertDescription>
+                </Alert>
+              </>
             )}
-
-            <div className="mt-3 p-2 bg-accent/10 rounded-md">
-              <Label htmlFor={`answer-${qIndex}`} className="text-sm font-semibold flex items-center text-accent-foreground/80">
-                 <AlertCircle size={16} className="mr-2 text-accent" /> Correct Answer (Editable source of truth)
-              </Label>
-               <Input
-                id={`answer-${qIndex}`}
-                value={q.answer}
-                onChange={(e) => handleCorrectAnswerTextChange(qIndex, e.target.value)}
-                className="mt-1 border-input focus:ring-primary bg-background"
-                placeholder="Type the correct option text here"
-                aria-label={`Correct answer definition for question ${qIndex + 1} text input`}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                This field defines the actual correct answer. Ensure it matches one of the options text exactly.
+             <p className="text-xs text-muted-foreground mt-3">
+                Note: The system uses the AI-generated 'answer' and 'reason'. You can edit question and option text.
+                If you edit an option that was the designated answer, the answer updates.
               </p>
-            </div>
             {qIndex < quiz.questions.length - 1 && <Separator className="my-6" />}
           </Card>
         ))}
