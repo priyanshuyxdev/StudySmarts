@@ -3,17 +3,21 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 import { summarizeDocument, type SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import { generateQuiz, type GenerateQuizOutput } from "@/ai/flows/generate-quiz";
+import { generateCustomQuiz, type GenerateCustomQuizInput, type GenerateCustomQuizOutput } from "@/ai/flows/generate-custom-quiz";
+
 
 import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
@@ -21,26 +25,28 @@ import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
 
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set workerSrc for pdfjs-dist. This tells pdf.js where to load its worker script from.
-// Using a CDN version. Ensure the version matches the installed pdfjs-dist version.
-// You can find the installed version in package.json.
-// For example, if "pdfjs-dist": "^4.4.168", use that version in the URL.
-const PDFJS_VERSION = pdfjsLib.version; // Gets the version from the imported library
+const PDFJS_VERSION = pdfjsLib.version;
 const PDFJS_WORKER_SRC = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.mjs`;
 
 
 export default function StudySmartsPage() {
   const [documentName, setDocumentName] = useState<string | null>(null);
   const [documentText, setDocumentText] = useState<string>("");
-  const [isFileUploaded, setIsFileUploaded] = useState<boolean>(false); // Tracks if any file is selected
-  const [isPdfProcessing, setIsPdfProcessing] = useState<boolean>(false); // Tracks if PDF processing is ongoing
+  const [isFileUploaded, setIsFileUploaded] = useState<boolean>(false);
+  const [isPdfProcessing, setIsPdfProcessing] = useState<boolean>(false);
 
   const [summary, setSummary] = useState<SummarizeDocumentOutput | null>(null);
   const [quiz, setQuiz] = useState<GenerateQuizOutput | null>(null);
   
   const [isLoadingSummary, setIsLoadingSummary] = useState<boolean>(false);
-  const [isLoadingQuiz, setIsLoadingQuiz] = useState<boolean>(false);
+  const [isLoadingQuiz, setIsLoadingQuiz] = useState<boolean>(false); // Used for both doc and custom quiz
   const [error, setError] = useState<string | null>(null);
+
+  // Custom Quiz State
+  const [customQuizTopic, setCustomQuizTopic] = useState<string>("");
+  const [customNumQuestions, setCustomNumQuestions] = useState<number>(10);
+  const [isCustomQuizMode, setIsCustomQuizMode] = useState<boolean>(false);
+
 
   const { toast } = useToast();
 
@@ -48,16 +54,34 @@ export default function StudySmartsPage() {
     pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
   }, []);
 
+  const resetDocumentState = () => {
+    setDocumentName(null);
+    setDocumentText("");
+    setIsFileUploaded(false);
+    setError(null);
+    setSummary(null);
+    setQuiz(null);
+    setIsCustomQuizMode(false);
+  }
+
+  const resetCustomQuizState = () => {
+    setCustomQuizTopic("");
+    setCustomNumQuestions(10);
+    setError(null);
+    setSummary(null); // Clear summary if switching to custom quiz or vice-versa
+    setQuiz(null);    // Clear quiz
+    setIsCustomQuizMode(true);
+  }
+
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    resetDocumentState(); // Reset states when a new file is chosen for document processing
+    setIsCustomQuizMode(false); // Ensure we are not in custom quiz mode
+
     if (file) {
       setDocumentName(file.name);
       setIsFileUploaded(true);
-      setError(null);
-      setDocumentText(""); // Clear previous text
-      setSummary(null); // Clear previous summary
-      setQuiz(null); // Clear previous quiz
-
+      
       if (file.type === "application/pdf") {
         setIsPdfProcessing(true);
         toast({
@@ -86,12 +110,11 @@ export default function StudySmartsPage() {
             title: "PDF Processing Failed",
             description: `Could not extract text from "${file.name}".`,
           });
-          setDocumentText(""); // Clear text if PDF processing fails
+          setDocumentText("");
         } finally {
           setIsPdfProcessing(false);
         }
       } else if (file.type.startsWith("text/")) {
-         // Handle plain text files
         const reader = new FileReader();
         reader.onload = (e) => {
           const text = e.target?.result as string;
@@ -117,77 +140,88 @@ export default function StudySmartsPage() {
         });
       }
     } else {
-      setDocumentName(null);
-      setDocumentText("");
-      setIsFileUploaded(false);
-      setError(null);
+      resetDocumentState();
     }
   };
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleGenerateDocumentAids = async (event: FormEvent) => {
     event.preventDefault();
-    if (!documentText.trim() && !isPdfProcessing) { // Only show error if not currently processing a PDF
+    if (!documentText.trim() && !isPdfProcessing) {
       setError("Document content cannot be empty. Please upload a file or paste text.");
-      toast({
-        variant: "destructive",
-        title: "Empty Content",
-        description: "Please provide document content.",
-      });
+      toast({ variant: "destructive", title: "Empty Content", description: "Please provide document content." });
       return;
     }
     if (isPdfProcessing) {
       setError("Please wait for the PDF processing to complete.");
-      toast({
-        title: "Processing PDF",
-        description: "Please wait for text extraction to finish before generating study aids.",
-      });
+      toast({ title: "Processing PDF", description: "Please wait for text extraction to finish." });
       return;
     }
 
     setError(null);
     setSummary(null);
     setQuiz(null);
-
+    setIsCustomQuizMode(false);
     setIsLoadingSummary(true);
+
     try {
       const summaryResult = await summarizeDocument({ documentText });
       setSummary(summaryResult);
-      toast({
-        title: "Summarization Complete",
-        description: "Document summary has been generated.",
-      });
+      toast({ title: "Summarization Complete", description: "Document summary has been generated." });
       setIsLoadingSummary(false);
 
       setIsLoadingQuiz(true);
       try {
         const quizResult = await generateQuiz({ summary: summaryResult.summary });
         setQuiz(quizResult);
-        toast({
-          title: "Quiz Generation Complete",
-          description: "Quiz has been generated based on the summary.",
-        });
+        toast({ title: "Quiz Generation Complete", description: "Quiz has been generated based on the summary." });
       } catch (quizError) {
         console.error("Quiz generation error:", quizError);
         setError("Failed to generate quiz. " + (quizError instanceof Error ? quizError.message : String(quizError)));
-        toast({
-          variant: "destructive",
-          title: "Quiz Generation Failed",
-          description: "Could not generate the quiz.",
-        });
+        toast({ variant: "destructive", title: "Quiz Generation Failed", description: "Could not generate the quiz." });
       } finally {
         setIsLoadingQuiz(false);
       }
     } catch (summaryError) {
       console.error("Summarization error:", summaryError);
       setError("Failed to summarize document. " + (summaryError instanceof Error ? summaryError.message : String(summaryError)));
-      toast({
-        variant: "destructive",
-        title: "Summarization Failed",
-        description: "Could not summarize the document.",
-      });
+      toast({ variant: "destructive", title: "Summarization Failed", description: "Could not summarize the document." });
       setIsLoadingSummary(false);
     }
   };
+
+  const handleGenerateCustomQuiz = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!customQuizTopic.trim()) {
+      setError("Custom quiz topic cannot be empty.");
+      toast({ variant: "destructive", title: "Empty Topic", description: "Please provide a topic for the custom quiz." });
+      return;
+    }
+    
+    setError(null);
+    setSummary(null);
+    setQuiz(null);
+    setIsCustomQuizMode(true);
+    setIsLoadingQuiz(true);
+    setDocumentName(`Custom Quiz: ${customQuizTopic}`); // For download button
+
+    try {
+      const customQuizResult = await generateCustomQuiz({ topic: customQuizTopic, numQuestions: customNumQuestions });
+      setQuiz(customQuizResult);
+      // Create a synthetic summary for custom quiz context
+      setSummary({ 
+        summary: `This quiz is based on the topic: "${customQuizTopic}". Hints will be generated based on general knowledge of this topic.`, 
+        sectionSummaries: undefined 
+      });
+      toast({ title: "Custom Quiz Generated", description: `Quiz for "${customQuizTopic}" is ready.` });
+    } catch (customQuizError) {
+      console.error("Custom quiz generation error:", customQuizError);
+      setError("Failed to generate custom quiz. " + (customQuizError instanceof Error ? customQuizError.message : String(customQuizError)));
+      toast({ variant: "destructive", title: "Custom Quiz Failed", description: "Could not generate the custom quiz." });
+    } finally {
+      setIsLoadingQuiz(false);
+    }
+  };
+
 
   const handleSummaryChange = (newSummary: SummarizeDocumentOutput) => {
     setSummary(newSummary);
@@ -199,10 +233,9 @@ export default function StudySmartsPage() {
   
   const totalLoadingProgress = () => {
     if (isPdfProcessing) return 15;
-    if (isLoadingSummary && !summary) return 25 + (isPdfProcessing ? 10 : 0) ; // Summarizing
-    if (isLoadingSummary && summary && isLoadingQuiz) return 50 + (isPdfProcessing ? 10 : 0); // Summarized, starting quiz
-    if (!isLoadingSummary && summary && isLoadingQuiz) return 75 + (isPdfProcessing ? 10 : 0); // Generating quiz
-    if (!isLoadingSummary && !isLoadingQuiz && summary && quiz) return 100; // Done
+    if (isLoadingSummary && !summary && !isCustomQuizMode) return 30;
+    if (isLoadingQuiz) return 75;
+    if (summary && quiz) return 100;
     return 0;
   }
 
@@ -214,7 +247,7 @@ export default function StudySmartsPage() {
           <h1 className="text-4xl font-bold text-foreground">StudySmarts</h1>
         </div>
         <p className="text-muted-foreground">
-          Upload your PDF or text file, or paste content. Get AI summaries & quizzes!
+          Upload your PDF/text, or create custom quizzes by topic. Get AI summaries & quizzes!
         </p>
       </header>
 
@@ -223,86 +256,141 @@ export default function StudySmartsPage() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <UploadCloud className="mr-2 h-6 w-6 text-primary" />
-              Upload Document &amp; Add Content
+              1. Process Document
             </CardTitle>
             <CardDescription>
-              Select a PDF or text file for automatic text extraction, or paste content manually.
+              Upload a PDF/text file for summary and quiz generation based on its content.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleGenerateDocumentAids} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="file-upload" className="text-sm font-medium text-foreground">Select File (PDF or .txt, .md)</label>
                 <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} className="file:text-primary file:font-semibold"/>
-                {documentName && (
+                {documentName && !isCustomQuizMode && (
                   <p className="text-sm text-muted-foreground flex items-center mt-1">
-                    <FileText size={16} className="mr-1" /> Selected file: {documentName}
+                    <FileText size={16} className="mr-1" /> Selected: {documentName}
                     {isPdfProcessing && " (Processing...)"}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="document-text" className="text-sm font-medium text-foreground">
-                  Document Content
+                  Document Content (from uploaded file or paste manually)
                 </label>
                 <Textarea
                   id="document-text"
                   placeholder={
                     isPdfProcessing 
                       ? "Extracting text from PDF..." 
-                      : isFileUploaded && documentText
+                      : isFileUploaded && documentText && !isCustomQuizMode
                         ? "Text from uploaded file."
-                        : "Paste the text content of your document here, or upload a file."
+                        : "Paste document text here, or upload a file above."
                   }
-                  value={documentText}
+                  value={isCustomQuizMode ? "" : documentText} // Clear if in custom quiz mode
                   onChange={(e) => {
                     setDocumentText(e.target.value);
-                    // If user types, assume they are no longer relying on file upload for content
-                    // or want to override/add to it.
-                    // setIsFileUploaded(false); // Or handle this based on desired UX
+                    if (isCustomQuizMode) setIsCustomQuizMode(false); // Switch back if user types here
                   }}
-                  rows={10}
+                  rows={8}
                   className="border-input focus:ring-primary"
-                  readOnly={isPdfProcessing} 
-                  aria-readonly={isPdfProcessing}
+                  readOnly={isPdfProcessing || isCustomQuizMode}
+                  aria-readonly={isPdfProcessing || isCustomQuizMode}
                 />
-                 {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && !documentText && !error && (
+                 {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && !documentText && !error && !isCustomQuizMode && (
                     <Alert variant="default" className="mt-2">
                         <Info className="h-4 w-4" />
                         <AlertTitle>PDF Ready</AlertTitle>
                         <AlertDescription>
-                            PDF text has been extracted. You can now generate study aids or edit the text below if needed.
+                            PDF text extracted. Generate study aids or edit text.
                         </AlertDescription>
                     </Alert>
                 )}
-                 {isFileUploaded && isPdfProcessing && (
+                 {isFileUploaded && isPdfProcessing && !isCustomQuizMode && (
                     <Alert variant="default" className="mt-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <AlertTitle>PDF Processing</AlertTitle>
-                        <AlertDescription>
-                            Extracting text from the PDF. This may take a moment.
-                        </AlertDescription>
+                        <AlertDescription>Extracting text from PDF...</AlertDescription>
                     </Alert>
                 )}
               </div>
-              {error && (
-                <Alert variant="destructive">
-                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
               <Button 
                 type="submit" 
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing}
+                disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizMode}
               >
-                {(isLoadingSummary || isLoadingQuiz || isPdfProcessing) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {(isPdfProcessing) ? 'Processing File...' : 'Generate Study Aids'}
+                {(isLoadingSummary || (isLoadingQuiz && !isCustomQuizMode)) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {(isPdfProcessing && !isCustomQuizMode) ? 'Processing File...' : 'Generate Study Aids from Document'}
               </Button>
             </form>
           </CardContent>
         </Card>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Wand2 className="mr-2 h-6 w-6 text-accent" />
+              2. Create Custom Quiz by Topic
+            </CardTitle>
+            <CardDescription>
+              Enter a topic or phrase to generate a quiz without uploading a document.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleGenerateCustomQuiz} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="custom-topic" className="text-sm font-medium text-foreground">Enter Topic/Phrase</Label>
+                <Input 
+                  id="custom-topic" 
+                  placeholder="e.g., 'The Solar System' or 'Photosynthesis'"
+                  value={customQuizTopic}
+                  onChange={(e) => {
+                    setCustomQuizTopic(e.target.value);
+                    if (!isCustomQuizMode) { // If user types here, switch to custom mode
+                        resetCustomQuizState(); // Resets states for custom quiz mode
+                        setCustomQuizTopic(e.target.value); // re-set topic as reset clears it
+                    }
+                  }}
+                  className="border-input focus:ring-accent"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Number of Questions</Label>
+                <RadioGroup 
+                  value={String(customNumQuestions)} 
+                  onValueChange={(value) => {
+                    setCustomNumQuestions(Number(value));
+                    if (!isCustomQuizMode) resetCustomQuizState();
+                  }} 
+                  className="flex space-x-2 md:space-x-4"
+                >
+                  {[5, 10, 15, 20].map(num => (
+                    <div key={num} className="flex items-center space-x-2">
+                      <RadioGroupItem value={String(num)} id={`num-${num}`} />
+                      <Label htmlFor={`num-${num}`} className="cursor-pointer">{num}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary}
+              >
+                {isLoadingQuiz && isCustomQuizMode && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Generate Custom Quiz
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        
+        {error && (
+          <Alert variant="destructive" className="my-4">
+              <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {(isLoadingSummary || isLoadingQuiz || isPdfProcessing) && (
           <Card className="shadow-lg">
@@ -313,14 +401,14 @@ export default function StudySmartsPage() {
               <Progress value={totalLoadingProgress()} className="w-full" />
               <p className="text-center text-muted-foreground mt-2">
                 {isPdfProcessing ? "Extracting text from PDF..." : ""}
-                {isLoadingSummary && !summary && !isPdfProcessing ? "Generating summary..." : ""}
-                {summary && isLoadingQuiz && !isPdfProcessing ? "Generating quiz..." : ""}
+                {isLoadingSummary && !summary && !isCustomQuizMode ? "Generating summary..." : ""}
+                {isLoadingQuiz && !isPdfProcessing ? "Generating quiz..." : ""}
               </p>
             </CardContent>
           </Card>
         )}
 
-        {summary && !isLoadingSummary && (
+        {summary && !isLoadingSummary && !isCustomQuizMode && (
           <SummaryDisplay 
             summary={summary} 
             onSummaryChange={handleSummaryChange} 
@@ -328,23 +416,30 @@ export default function StudySmartsPage() {
           />
         )}
 
-        {quiz && summary && !isLoadingQuiz && ( // Ensure summary is available for hints
-          <QuizDisplay 
-            quiz={quiz} 
-            onQuizChange={handleQuizChange} 
-            isLoading={isLoadingQuiz}
-            documentSummary={summary.summary} // Pass summary for hints
-          />
+        {quiz && summary && !isLoadingQuiz && (
+          <div className="mt-6">
+             <CardHeader className="px-0 pt-0">
+                <CardTitle className="flex items-center text-2xl">
+                    <HelpCircle className="mr-2 h-7 w-7 text-primary" /> 
+                    {isCustomQuizMode ? `Quiz on "${customQuizTopic}"` : "Quiz from Document"}
+                </CardTitle>
+             </CardHeader>
+            <QuizDisplay 
+              quiz={quiz} 
+              onQuizChange={handleQuizChange} 
+              isLoading={isLoadingQuiz}
+              documentSummary={summary.summary} // Pass summary for hints
+            />
+          </div>
         )}
         
         {summary && quiz && !isLoadingSummary && !isLoadingQuiz && (
-          <>
-            <DownloadStudyAidsButton 
-              summary={summary} 
-              quiz={quiz} 
-              documentName={documentName || "StudyAids"}
-            />
-          </>
+          <DownloadStudyAidsButton 
+            summary={summary} 
+            quiz={quiz} 
+            documentName={documentName || (isCustomQuizMode ? `Custom Quiz - ${customQuizTopic}` : "StudyAids")}
+            isCustomQuiz={isCustomQuizMode}
+          />
         )}
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center">
@@ -353,3 +448,4 @@ export default function StudySmartsPage() {
     </div>
   );
 }
+

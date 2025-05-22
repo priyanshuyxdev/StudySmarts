@@ -9,12 +9,13 @@ import type { GenerateQuizOutput } from "@/ai/flows/generate-quiz";
 import jsPDF from 'jspdf';
 
 interface DownloadStudyAidsButtonProps {
-  summary: SummarizeDocumentOutput;
+  summary: SummarizeDocumentOutput; // For custom quizzes, this will contain a placeholder summary
   quiz: GenerateQuizOutput;
   documentName: string;
+  isCustomQuiz?: boolean;
 }
 
-export default function DownloadStudyAidsButton({ summary, quiz, documentName }: DownloadStudyAidsButtonProps) {
+export default function DownloadStudyAidsButton({ summary, quiz, documentName, isCustomQuiz = false }: DownloadStudyAidsButtonProps) {
   const { toast } = useToast();
 
   const handleDownload = () => {
@@ -25,7 +26,7 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
 
     try {
       const doc = new jsPDF();
-      let yPosition = 15; // Initial Y position for text
+      let yPosition = 15;
       const pageHeight = doc.internal.pageSize.height;
       const pageWidth = doc.internal.pageSize.width;
       const margin = 15;
@@ -34,33 +35,40 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
       const addTextWithBreaks = (text: string, x: number, y: number, options?: any) => {
         const lines = doc.splitTextToSize(text, maxLineWidth);
         doc.text(lines, x, y, options);
-        return y + (lines.length * (options?.fontSize ? options.fontSize * 0.35 : 7)); // Adjust spacing based on font size or default
+        return y + (lines.length * (options?.fontSize ? options.fontSize * 0.35 : 7)); 
       };
 
-      // Document Title
       doc.setFontSize(18);
-      yPosition = addTextWithBreaks(`Study Aids for: ${documentName}`, margin, yPosition, {fontSize: 18});
+      const title = isCustomQuiz ? `Custom Quiz: ${documentName.replace("Custom Quiz: ", "")}` : `Study Aids for: ${documentName}`;
+      yPosition = addTextWithBreaks(title, margin, yPosition, {fontSize: 18});
       yPosition += 10;
 
-      // Summary Section
-      doc.setFontSize(16);
-      yPosition = addTextWithBreaks("SUMMARY", margin, yPosition, {fontSize: 16});
-      yPosition += 5;
-      doc.setFontSize(11);
-      yPosition = addTextWithBreaks(summary.summary, margin, yPosition, {fontSize: 11});
-      yPosition += 7;
-
-      if (summary.sectionSummaries) {
-        doc.setFontSize(14);
-        yPosition = addTextWithBreaks("Section Summaries:", margin, yPosition, {fontSize: 14});
+      // Summary Section - only if not a custom quiz or if summary has substantial content
+      if (!isCustomQuiz && summary.summary) {
+        doc.setFontSize(16);
+        yPosition = addTextWithBreaks("SUMMARY", margin, yPosition, {fontSize: 16});
         yPosition += 5;
         doc.setFontSize(11);
-        yPosition = addTextWithBreaks(summary.sectionSummaries, margin, yPosition, {fontSize: 11});
+        yPosition = addTextWithBreaks(summary.summary, margin, yPosition, {fontSize: 11});
         yPosition += 7;
+
+        if (summary.sectionSummaries) {
+          doc.setFontSize(14);
+          yPosition = addTextWithBreaks("Section Summaries:", margin, yPosition, {fontSize: 14});
+          yPosition += 5;
+          doc.setFontSize(11);
+          yPosition = addTextWithBreaks(summary.sectionSummaries, margin, yPosition, {fontSize: 11});
+          yPosition += 7;
+        }
+      } else if (isCustomQuiz && summary.summary) {
+        // For custom quiz, we might have a placeholder summary like "Quiz about TOPIC"
+        // Let's skip it in PDF if it's just a placeholder, or display if it was more substantial.
+        // For now, we assume it's a placeholder and skip it.
       }
 
+
       // Quiz Section
-      if (yPosition > pageHeight - 40) { // Check if new page needed before quiz title
+      if (yPosition > pageHeight - 40) { 
           doc.addPage();
           yPosition = 15;
       }
@@ -72,11 +80,10 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
         doc.setFontSize(12);
         const questionText = `Q${i+1}: ${q.question}`;
         
-        // Check for page break before each question
         const questionLines = doc.splitTextToSize(questionText, maxLineWidth);
         let optionsHeight = 0;
         q.options.forEach(opt => {
-            optionsHeight += doc.splitTextToSize(opt, maxLineWidth - 5).length * 5; // Approx height
+            optionsHeight += doc.splitTextToSize(opt, maxLineWidth - 5).length * 5;
         });
         const reasonLines = doc.splitTextToSize(`Reason: ${q.reason}`, maxLineWidth);
         const estimatedHeight = (questionLines.length * 5) + optionsHeight + (reasonLines.length * 5) + 10;
@@ -95,15 +102,15 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
           yPosition += 1;
         });
         yPosition += 2;
-        // The actual answer is not written to the PDF, only the reason for the correct answer.
         yPosition = addTextWithBreaks(`Reason for correct answer: ${q.reason}`, margin, yPosition, {fontSize: 11});
-        yPosition += 8; // Space before next question
+        yPosition += 8;
       });
 
-      doc.save(`${documentName.replace(/\.[^/.]+$/, "") || "StudyAids"}_StudyAids.pdf`);
+      const pdfFileName = `${documentName.replace(/[:/\\]/g, "_").replace(/\.[^/.]+$/, "") || "StudyAids"}_Quiz.pdf`;
+      doc.save(pdfFileName);
       toast({
         title: "PDF Downloaded",
-        description: `"${documentName}_StudyAids.pdf" has been downloaded.`,
+        description: `"${pdfFileName}" has been downloaded.`,
         duration: 5000,
       });
 
@@ -122,10 +129,11 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName }:
     <Button 
         onClick={handleDownload} 
         className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
-        aria-label="Download summary and quiz as PDF"
+        aria-label="Download study aids as PDF"
     >
       <Download className="mr-2 h-5 w-5" />
-      Download Summary & Quiz as PDF
+      Download {isCustomQuiz ? "Quiz" : "Summary & Quiz"} as PDF
     </Button>
   );
 }
+
