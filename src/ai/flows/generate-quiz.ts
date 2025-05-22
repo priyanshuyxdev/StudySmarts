@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-quiz.ts
 'use server';
 
@@ -40,9 +41,8 @@ const generateQuizPrompt = ai.definePrompt({
   output: {schema: GenerateQuizOutputSchema},
   prompt: `You are an expert in generating quizzes from text.
 
-  Given the following summary of a document, generate a quiz with multiple-choice questions to test the user's understanding of the material.
+  Given the following summary of a document, generate a quiz with at least 10 multiple-choice questions, and up to 15 if the content is rich enough, to test the user's understanding of the material.
   Each question should have 4 options, one of which is the correct answer.
-  The quiz should have at most 10 questions.
 
   Summary: {{{summary}}}
 
