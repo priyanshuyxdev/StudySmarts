@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, Edit3, CheckCircle, XCircle, Info, ListChecks, Lightbulb, Loader2, Users } from "lucide-react";
+import { HelpCircle, Edit3, CheckCircle, XCircle, Info, ListChecks, Lightbulb, Loader2, Send } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo } from "react";
@@ -28,7 +28,7 @@ interface QuizDisplayProps {
   quiz: GenerateQuizOutput;
   onQuizChange: (newQuiz: GenerateQuizOutput) => void;
   isLoading: boolean;
-  documentSummary?: string; // Optional: only passed for editable quizzes (teacher/guest)
+  documentSummary?: string; 
   documentName?: string; 
   isEditable?: boolean; 
 }
@@ -45,6 +45,7 @@ export default function QuizDisplay({
   const [feedback, setFeedback] = useState<{[key: number]: {isCorrect: boolean, reason?: string} | undefined}>({});
   const [hints, setHints] = useState<{[key: number]: string | null | undefined}>({});
   const [isLoadingHint, setIsLoadingHint] = useState<{[key: number]: boolean}>({});
+  const [isQuizSubmittedByStudent, setIsQuizSubmittedByStudent] = useState<boolean>(false);
   const { toast } = useToast();
   const { currentUser, recordStudentAttempt } = useStudyContext(); 
 
@@ -53,6 +54,7 @@ export default function QuizDisplay({
     setFeedback({});
     setHints({});
     setIsLoadingHint({});
+    setIsQuizSubmittedByStudent(false); // Reset submission state on new quiz
   }, [quiz]);
 
   const handleQuestionTextChange = (index: number, value: string) => {
@@ -64,14 +66,15 @@ export default function QuizDisplay({
   };
   
   const handleUserSelection = (qIndex: number, selectedOption: string) => {
+    if (isQuizSubmittedByStudent && !isEditable) return; // Don't allow changes after student submission
+
     setUserSelections(prev => ({...prev, [qIndex]: selectedOption}));
-    // Feedback state is still updated, but its display will be conditional
     const isCorrect = quiz.questions[qIndex].answer === selectedOption;
     setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: quiz.questions[qIndex].reason }}));
   };
 
   const handleGetHint = async (qIndex: number) => {
-    if (!isEditable || !documentSummary || !quiz.questions[qIndex]) return; // Only allow hints if editable and summary exists
+    if (!isEditable || !documentSummary || !quiz.questions[qIndex]) return;
     setIsLoadingHint(prev => ({...prev, [qIndex]: true}));
     setHints(prev => ({...prev, [qIndex]: undefined}));
     try {
@@ -103,20 +106,22 @@ export default function QuizDisplay({
     return quiz.questions.length > 0 && score.answered === quiz.questions.length;
   }, [quiz.questions.length, score.answered]);
 
-  useEffect(() => {
-    if (allQuestionsAttempted && currentUser?.role === 'student' && documentName) {
-      recordStudentAttempt({
-        studentId: currentUser.id,
-        score: score.correct,
-        totalQuestions: score.total,
-        quizName: documentName,
-      });
-    }
-  }, [allQuestionsAttempted, currentUser, recordStudentAttempt, score, documentName, quiz.questions.length]);
 
+  const handleSubmitQuiz = () => {
+    if (!allQuestionsAttempted || currentUser?.role !== 'student' || !documentName) return;
+    
+    recordStudentAttempt({
+      studentId: currentUser.id,
+      score: score.correct,
+      totalQuestions: score.total,
+      quizName: documentName,
+    });
+    setIsQuizSubmittedByStudent(true);
+    toast({ title: "Quiz Submitted!", description: `Your score: ${score.correct}/${score.total}. Results below.`});
+  };
 
   const resultsSummary = useMemo(() => {
-    if (!allQuestionsAttempted) return [];
+    if (!allQuestionsAttempted) return []; // Only generate summary if all attempted, even before submission
     return quiz.questions.map((q, index) => ({
       questionNumber: index + 1,
       isCorrect: feedback[index]?.isCorrect ?? false,
@@ -149,7 +154,8 @@ export default function QuizDisplay({
         <CardTitle className="flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" /> Generated Quiz</CardTitle>
         <CardDescription>
           {isEditable ? "Review and edit the quiz questions. " : ""}
-          Select an answer for each question. Your score and results summary will appear after attempting all questions.
+          Select an answer for each question. 
+          {!isEditable && " Once all questions are answered, a 'Submit Quiz' button will appear."}
           {isEditable && " Use hints if you're stuck!"}
         </CardDescription>
       </CardHeader>
@@ -161,7 +167,7 @@ export default function QuizDisplay({
                 {isEditable && <Edit3 size={16} className="mr-2 text-accent" />} 
                 Question {qIndex + 1}
               </Label>
-              {isEditable && documentSummary && ( // Only show hint button if editable and summary is available
+              {isEditable && documentSummary && ( 
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -184,7 +190,7 @@ export default function QuizDisplay({
               readOnly={!isEditable}
             />
 
-            {isEditable && hints[qIndex] !== undefined && ( // Only show hint if editable
+            {isEditable && hints[qIndex] !== undefined && ( 
               <Alert variant="default" className="mt-3 bg-yellow-50 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700">
                 <Lightbulb className="h-4 w-4 text-yellow-700 dark:text-yellow-400" />
                 <AlertTitle className="text-yellow-700 dark:text-yellow-400">Hint</AlertTitle>
@@ -201,6 +207,7 @@ export default function QuizDisplay({
                 onValueChange={(value) => handleUserSelection(qIndex, value)}
                 aria-label={`Options for question ${qIndex + 1}`}
                 className="space-y-1"
+                disabled={!isEditable && isQuizSubmittedByStudent} // Disable options after student submission
               >
                 {q.options.map((option, oIndex) => (
                   <Label 
@@ -210,7 +217,7 @@ export default function QuizDisplay({
                       "flex items-center space-x-3 p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors",
                       isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "",
                       isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false ? "border-red-500 bg-red-50 dark:bg-red-900/30" : "",
-                      !isEditable && userSelections[qIndex] === option ? "bg-muted" : "" // Style selected option for student without correctness indication
+                      !isEditable && userSelections[qIndex] === option ? "bg-muted" : "" 
                     )}
                   >
                     <RadioGroupItem value={option} id={`q${qIndex}-option${oIndex}`} className="shrink-0" />
@@ -226,7 +233,7 @@ export default function QuizDisplay({
               </RadioGroup>
             </div>
             
-            {isEditable && feedback[qIndex] && ( // Only show immediate feedback if editable
+            {isEditable && feedback[qIndex] && ( 
               <>
                 <Alert 
                   variant={feedback[qIndex]?.isCorrect ? "default" : "destructive"} 
@@ -254,7 +261,21 @@ export default function QuizDisplay({
         ))}
       </CardContent>
 
-      {allQuestionsAttempted && (
+      {!isEditable && allQuestionsAttempted && !isQuizSubmittedByStudent && (
+        <CardFooter className="flex-col items-center p-6 border-t">
+          <Button 
+            onClick={handleSubmitQuiz} 
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
+            size="lg"
+            aria-label="Submit quiz answers"
+          >
+            <Send className="mr-2 h-5 w-5" />
+            Submit Quiz
+          </Button>
+        </CardFooter>
+      )}
+
+      {((isEditable && allQuestionsAttempted) || (!isEditable && isQuizSubmittedByStudent)) && (
         <CardFooter className="flex-col items-start space-y-4 p-6 border-t">
           <div className="w-full">
             <h3 className="text-xl font-semibold flex items-center mb-2">
@@ -269,10 +290,11 @@ export default function QuizDisplay({
                 <TableRow>
                   <TableHead className="w-[90px] py-2 px-3 h-10">Q #</TableHead>
                   <TableHead className="py-2 px-3 h-10">Status</TableHead>
+                  {!isEditable && <TableHead className="py-2 px-3 h-10">Explanation</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {resultsSummary.map((result) => (
+                {resultsSummary.map((result, index) => (
                   <TableRow key={result.questionNumber}>
                     <TableCell className="font-medium py-2 px-3">{result.questionNumber}</TableCell>
                     <TableCell className="py-2 px-3">
@@ -286,6 +308,11 @@ export default function QuizDisplay({
                         </span>
                       )}
                     </TableCell>
+                     {!isEditable && (
+                        <TableCell className="py-2 px-3 text-xs text-muted-foreground">
+                            {quiz.questions[index].reason}
+                        </TableCell>
+                     )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -296,3 +323,6 @@ export default function QuizDisplay({
     </Card>
   );
 }
+
+
+    
