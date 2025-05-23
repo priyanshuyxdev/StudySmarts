@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation'; // Import usePathname
 import { Home, User, Briefcase, LogOut, BookOpenCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/auth/AuthModal';
@@ -12,20 +13,25 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
   const { currentUser, logoutUser } = useStudyContext();
+  const pathname = usePathname(); // Get current pathname
 
   const handleAuthLinkClick = (role: 'student' | 'teacher') => {
     if (!currentUser) {
       setAuthRole(role);
       setIsAuthModalOpen(true);
     } else if (currentUser.role !== role) {
-      // If logged in as other role, logout first then show modal
       logoutUser();
       setAuthRole(role);
       setIsAuthModalOpen(true);
-    } else {
-      // Already logged in as this role, specific navigation handled by Link href
     }
+    // If already logged in as this role, specific navigation handled by Link href or current page
   };
+
+  const isHomeActive = pathname === '/';
+  const isStudentActive = pathname === '/student';
+  // Teacher's main page is '/', so "Teacher" link is active if they are a teacher and on the home page.
+  const isTeacherActive = pathname === '/' && currentUser?.role === 'teacher';
+
 
   return (
     <>
@@ -38,31 +44,31 @@ export default function Navbar() {
 
           <div className="space-x-2 sm:space-x-4 flex items-center">
             <Link href="/" passHref>
-              <Button variant="ghost" className="flex items-center text-sm sm:text-base">
+              <Button variant={isHomeActive && !isTeacherActive ? "secondary" : "ghost"} className="flex items-center text-sm sm:text-base">
                 <Home className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Home
               </Button>
             </Link>
             
             {currentUser?.role === 'student' ? (
                  <Link href="/student" passHref>
-                    <Button variant="ghost" className="flex items-center text-sm sm:text-base">
+                    <Button variant={isStudentActive ? "secondary" : "ghost"} className="flex items-center text-sm sm:text-base">
                         <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
                     </Button>
                  </Link>
             ) : (
-                <Button variant="ghost" onClick={() => handleAuthLinkClick('student')} className="flex items-center text-sm sm:text-base">
+                <Button variant={isStudentActive ? "secondary" : "ghost"} onClick={() => handleAuthLinkClick('student')} className="flex items-center text-sm sm:text-base">
                     <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
                 </Button>
             )}
 
             {currentUser?.role === 'teacher' ? (
                  <Link href="/" passHref> {/* Teacher uses home page for creation */}
-                    <Button variant="ghost" className="flex items-center text-sm sm:text-base">
+                    <Button variant={isTeacherActive ? "secondary" : "ghost"} className="flex items-center text-sm sm:text-base">
                         <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
                     </Button>
                  </Link>
             ) : (
-                <Button variant="ghost" onClick={() => handleAuthLinkClick('teacher')} className="flex items-center text-sm sm:text-base">
+                <Button variant={isTeacherActive ? "secondary" : "ghost"} onClick={() => handleAuthLinkClick('teacher')} className="flex items-center text-sm sm:text-base">
                     <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
                 </Button>
             )}
