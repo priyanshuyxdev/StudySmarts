@@ -16,12 +16,15 @@ export default function StudentPage() {
 
   useEffect(() => {
     if (currentUser === null) {
+      // If not logged in, redirect to home
       router.push('/');
     } else if (currentUser.role !== 'student') {
+      // If logged in but not as student, redirect to home (or teacher dashboard if we had one)
       router.push('/');
     }
   }, [currentUser, router]);
 
+  // Loading state or if redirection hasn't happened yet
   if (!currentUser || currentUser.role !== 'student') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] p-4">
@@ -31,6 +34,7 @@ export default function StudentPage() {
     );
   }
 
+  // Student is logged in, but no quiz is available
   if (!teacherQuizData) {
     return (
       <main className="w-full max-w-2xl mx-auto space-y-6 p-4 md:p-8 mt-8">
@@ -60,6 +64,7 @@ export default function StudentPage() {
     );
   }
 
+  // Student is logged in and a quiz is available
   return (
     <main className="w-full max-w-4xl mx-auto space-y-6 p-4 md:p-8 mt-4">
       <Card className="shadow-lg">
@@ -74,23 +79,26 @@ export default function StudentPage() {
         </CardHeader>
       </Card>
 
+      {/* Quiz Display for Students - Not Editable */}
       <div className="mt-6">
         <QuizDisplay
           quiz={teacherQuizData.quiz}
-          onQuizChange={() => {}} 
-          isLoading={false}
-          documentName={teacherQuizData.documentName}
-          isEditable={false} 
+          onQuizChange={() => {}} // No-op as students can't change quiz structure
+          isLoading={false} // Assuming quiz data is loaded if we reach here
+          documentName={teacherQuizData.documentName} // For quiz title
+          isEditable={false} // CRITICAL: Students cannot edit quiz content
         />
       </div>
       
+      {/* Download Button for Students */}
       <DownloadStudyAidsButton
-        summary={teacherQuizData.summary} 
+        summary={teacherQuizData.summary} // Pass summary (though students won't see it on page, it's for PDF)
         quiz={teacherQuizData.quiz}
         documentName={teacherQuizData.documentName}
         isCustomQuiz={teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")}
       />
        <footer className="w-full text-center p-4 mt-8">
+        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
       </footer>
     </main>
