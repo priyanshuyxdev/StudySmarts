@@ -7,13 +7,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { HelpCircle, Edit3, CheckCircle, XCircle, Info, ListChecks, Lightbulb, Loader2 } from "lucide-react";
+import { HelpCircle, Edit3, CheckCircle, XCircle, Info, ListChecks, Lightbulb, Loader2, Users } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { useStudyContext } from "@/context/StudyContext"; // Import context
 import {
   Table,
   TableBody,
@@ -28,7 +29,8 @@ interface QuizDisplayProps {
   onQuizChange: (newQuiz: GenerateQuizOutput) => void;
   isLoading: boolean;
   documentSummary: string; 
-  isEditable?: boolean; // New prop
+  documentName?: string; // For recording student attempt quiz name
+  isEditable?: boolean; 
 }
 
 export default function QuizDisplay({ 
@@ -36,14 +38,17 @@ export default function QuizDisplay({
   onQuizChange, 
   isLoading, 
   documentSummary, 
-  isEditable = true // Default to true for backward compatibility/teacher view
+  documentName,
+  isEditable = true 
 }: QuizDisplayProps) {
   const [userSelections, setUserSelections] = useState<{[key: number]: string | undefined}>({});
   const [feedback, setFeedback] = useState<{[key: number]: {isCorrect: boolean, reason?: string} | undefined}>({});
   const [hints, setHints] = useState<{[key: number]: string | null | undefined}>({});
   const [isLoadingHint, setIsLoadingHint] = useState<{[key: number]: boolean}>({});
   const { toast } = useToast();
+  const { currentUser, recordStudentAttempt } = useStudyContext(); // Get context
 
+  // Reset state when the quiz itself changes
   useEffect(() => {
     setUserSelections({});
     setFeedback({});
@@ -62,7 +67,6 @@ export default function QuizDisplay({
   const handleUserSelection = (qIndex: number, selectedOption: string) => {
     setUserSelections(prev => ({...prev, [qIndex]: selectedOption}));
     const isCorrect = quiz.questions[qIndex].answer === selectedOption;
-    // Store the original reason from the quiz data
     setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: quiz.questions[qIndex].reason }}));
   };
 
@@ -98,6 +102,19 @@ export default function QuizDisplay({
   const allQuestionsAttempted = useMemo(() => {
     return quiz.questions.length > 0 && score.answered === quiz.questions.length;
   }, [quiz.questions.length, score.answered]);
+
+  // Record student attempt when all questions are answered
+  useEffect(() => {
+    if (allQuestionsAttempted && currentUser?.role === 'student' && documentName) {
+      recordStudentAttempt({
+        studentId: currentUser.id,
+        score: score.correct,
+        totalQuestions: score.total,
+        quizName: documentName,
+      });
+    }
+  }, [allQuestionsAttempted, currentUser, recordStudentAttempt, score, documentName, quiz.questions.length]);
+
 
   const resultsSummary = useMemo(() => {
     if (!allQuestionsAttempted) return [];

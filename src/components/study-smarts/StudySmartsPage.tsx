@@ -3,7 +3,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,10 +14,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyContext } from '@/context/StudyContext';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 
 import { summarizeDocument, type SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import { generateQuiz, type GenerateQuizOutput } from "@/ai/flows/generate-quiz";
-import { generateCustomQuiz, type GenerateCustomQuizInput } from "@/ai/flows/generate-custom-quiz";
+import { generateCustomQuiz } from "@/ai/flows/generate-custom-quiz";
 
 import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
@@ -28,7 +37,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 const PDFJS_WORKER_SRC = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.mjs`;
 
 export default function StudySmartsPage() {
-  const { currentUser, setTeacherQuizData, teacherQuizData } = useStudyContext();
+  const { currentUser, setTeacherQuizData, teacherQuizData, studentAttempts } = useStudyContext();
   const [documentName, setDocumentName] = useState<string | null>(null);
   const [documentText, setDocumentText] = useState<string>("");
   const [isFileUploaded, setIsFileUploaded] = useState<boolean>(false);
@@ -43,7 +52,7 @@ export default function StudySmartsPage() {
 
   const [customQuizTopic, setCustomQuizTopic] = useState<string>("");
   const [customNumQuestions, setCustomNumQuestions] = useState<number>(10);
-  const [isCustomQuizModeActive, setIsCustomQuizModeActive] = useState<boolean>(false); // True if actively working on custom quiz
+  const [isCustomQuizModeActive, setIsCustomQuizModeActive] = useState<boolean>(false); 
 
   const [scrollToQuizSignal, setScrollToQuizSignal] = useState<boolean>(false);
   const quizSectionRef = useRef<HTMLDivElement>(null);
@@ -54,19 +63,22 @@ export default function StudySmartsPage() {
     pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
   }, []);
   
-  // Effect to load teacher's quiz if they are logged in and navigate to home
   useEffect(() => {
     if (currentUser?.role === 'teacher' && teacherQuizData) {
         setSummary(teacherQuizData.summary);
         setQuiz(teacherQuizData.quiz);
         setDocumentName(teacherQuizData.documentName);
-        setIsCustomQuizModeActive(false); // Teacher uses document processing
+        setIsCustomQuizModeActive(teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")); 
     } else if (currentUser?.role !== 'teacher') {
-        // If not a teacher, or teacher has no quiz data, clear local state unless it's a custom quiz being built
+        // Non-teachers don't automatically load teacher data.
+        // Their local work (custom quiz build, or own doc upload) is preserved.
+    } else if (currentUser?.role === 'teacher' && !teacherQuizData) {
+        // Teacher is logged in but no quiz data in context, clear local display
+        // unless they are actively building a custom quiz.
         if (!isCustomQuizModeActive) {
-            // setSummary(null); // Keep local summary/quiz if user is working on one as guest
-            // setQuiz(null);
-            // setDocumentName(null);
+            setSummary(null);
+            setQuiz(null);
+            setDocumentName(null);
         }
     }
   }, [currentUser, teacherQuizData, isCustomQuizModeActive]);
@@ -84,12 +96,11 @@ export default function StudySmartsPage() {
     setDocumentText("");
     setIsFileUploaded(false);
     setError(null);
-    // Only reset summary/quiz if not loading teacher's quiz
     if (!(currentUser?.role === 'teacher' && teacherQuizData)) {
         setSummary(null);
         setQuiz(null);
     }
-    setIsCustomQuizModeActive(false);
+    // setIsCustomQuizModeActive(false); // Don't reset this here, managed by mode change
   }
 
   const prepareForCustomQuizGeneration = () => {
@@ -97,18 +108,28 @@ export default function StudySmartsPage() {
         setError(null);
         setSummary(null); 
         setQuiz(null);    
-        setIsCustomQuizModeActive(true);
         setDocumentName(null);
         setDocumentText("");
         setIsFileUploaded(false);
     }
+    setIsCustomQuizModeActive(true);
   }
+
+  const prepareForDocumentProcessing = () => {
+    if (isCustomQuizModeActive) {
+      setCustomQuizTopic("");
+      setError(null);
+      setSummary(null);
+      setQuiz(null);
+    }
+    setIsCustomQuizModeActive(false);
+  }
+
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    prepareForDocumentProcessing();
     resetDocumentState(); 
-    setIsCustomQuizModeActive(false); 
-    setCustomQuizTopic("");
 
     if (file) {
       setDocumentName(file.name);
@@ -153,6 +174,10 @@ export default function StudySmartsPage() {
 
   const handleGenerateDocumentAids = async (event: FormEvent) => {
     event.preventDefault();
+    if (isCustomQuizModeActive) {
+        toast({variant: "default", title: "Mode Conflict", description: "Switch to document processing mode first."});
+        return;
+    }
     if (!documentText.trim() && !isPdfProcessing) {
       setError("Document content is empty.");
       toast({ variant: "destructive", title: "Empty Content", description: "Please provide document content." });
@@ -163,8 +188,8 @@ export default function StudySmartsPage() {
     setError(null);
     setSummary(null);
     setQuiz(null);
-    setIsCustomQuizModeActive(false); 
-    setCustomQuizTopic(""); 
+    // setIsCustomQuizModeActive(false); // Already handled by mode prep
+    // setCustomQuizTopic(""); 
     setIsLoadingSummary(true);
     setIsLoadingQuiz(false);
 
@@ -200,16 +225,22 @@ export default function StudySmartsPage() {
 
   const handleGenerateCustomQuiz = async (event: FormEvent) => {
     event.preventDefault();
+    if (!isCustomQuizModeActive){
+        toast({variant: "default", title: "Mode Conflict", description: "Activate custom quiz mode first (by typing a topic).."});
+        return;
+    }
     if (!customQuizTopic.trim()) {
       setError("Custom quiz topic cannot be empty.");
       toast({ variant: "destructive", title: "Empty Topic", description: "Please provide a topic." });
       return;
     }
     
-    prepareForCustomQuizGeneration(); 
+    // prepareForCustomQuizGeneration(); // Already handled by typing in topic
     setError(null);
+    setSummary(null); // Clear previous summary/quiz before generating new custom one
+    setQuiz(null);
     setIsLoadingQuiz(true);
-    setIsLoadingSummary(false);
+    setIsLoadingSummary(false); // No summary gen for custom quiz path
     
     const tempDocName = `Custom Quiz: ${customQuizTopic}`;
     setDocumentName(tempDocName);
@@ -221,15 +252,20 @@ export default function StudySmartsPage() {
         sectionSummaries: undefined 
       };
       setQuiz(customQuizResult);
-      setSummary(placeholderSummary);
+      setSummary(placeholderSummary); // Set placeholder summary for QuizDisplay context
       setScrollToQuizSignal(true);
       toast({ title: "Custom Quiz Generated", description: `Quiz for "${customQuizTopic}" is ready.` });
 
-      // Teachers generating custom quiz does not set it as the "official" student quiz
-      // Only document-based quizzes from teachers are set for students for now.
-      // If teachers should be able to set custom quizzes for students, this logic would change.
+      if (currentUser?.role === 'teacher') {
+         // Teachers generating custom quiz can also set it if they wish.
+         // For now, only document-based quizzes from teachers are *automatically* set for students.
+         // To allow teachers to set custom quizzes:
+         setTeacherQuizData({ summary: placeholderSummary, quiz: customQuizResult, documentName: tempDocName });
+         toast({ title: "Custom Quiz Set", description: "This custom quiz is now available for students." });
+      }
 
-    } catch (customQuizError: any) {
+    } catch (customQuizError: any)
+{
       setError("Failed to generate custom quiz: " + customQuizError.message);
       toast({ variant: "destructive", title: "Custom Quiz Failed", description: "Generation failed."});
     } finally {
@@ -252,18 +288,33 @@ export default function StudySmartsPage() {
   };
   
   const totalLoadingProgress = () => {
-    if (isPdfProcessing) return 15;
+    if (isPdfProcessing && !isCustomQuizModeActive) return 15;
     if (isLoadingSummary && !summary && !isCustomQuizModeActive) return 30;
-    if (isLoadingQuiz) return 75;
-    if ((summary && quiz && !isCustomQuizModeActive) || (quiz && isCustomQuizModeActive)) return 100;
+    if (isLoadingQuiz) return 75; // Covers both quiz types
+    if ((summary && quiz && !isCustomQuizModeActive) || (quiz && isCustomQuizModeActive && summary)) return 100;
     return 0;
   }
 
-  const isTeacherViewingOwnQuiz = currentUser?.role === 'teacher' && quiz && summary;
-  const isGuestViewingQuiz = !currentUser && quiz && summary;
+  // For teacher's view of student scores
+  const relevantStudentAttempts = studentAttempts.filter(
+    attempt => attempt.quizName === teacherQuizData?.documentName
+  );
+
+  // Determine who is viewing the page for conditional rendering
+  const isTeacherOnline = currentUser?.role === 'teacher';
+  const isStudentOnline = currentUser?.role === 'student';
+  const isGuestOnline = !currentUser;
+
+  // What content to display (summary/quiz)
+  // Teacher: Displays their own generated content (from state, or context if reloaded)
+  // Guest: Displays locally generated content
+  const displaySummary = (isTeacherOnline && teacherQuizData) ? teacherQuizData.summary : summary;
+  const displayQuiz = (isTeacherOnline && teacherQuizData) ? teacherQuizData.quiz : quiz;
+  const displayDocumentName = (isTeacherOnline && teacherQuizData) ? teacherQuizData.documentName : documentName;
+  const displayIsCustomQuizMode = (isTeacherOnline && teacherQuizData) ? teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:") : isCustomQuizModeActive;
 
 
-  if (currentUser?.role === 'student') {
+  if (isStudentOnline) {
     return (
         <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto">
             <Card className="shadow-lg">
@@ -284,15 +335,13 @@ export default function StudySmartsPage() {
 
   return (
     <div className="min-h-[calc(100vh-var(--navbar-height,60px))] flex flex-col items-center">
-      {/* Header removed as Navbar is now in RootLayout */}
       <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
-        { currentUser?.role === 'teacher' && (
+        { isTeacherOnline && (
              <Alert variant="default" className="bg-primary/10 border-primary/30">
                 <Briefcase className="h-5 w-5 text-primary" />
                 <AlertTitle className="text-primary font-semibold">Teacher Mode Activated</AlertTitle>
                 <AlertDescription>
-                    You are logged in as a teacher. Quizzes generated from "Process Document" will be made available to students.
-                    Custom quizzes generated here are for your review only and won't be set for students automatically.
+                    You are logged in as Teacher ({currentUser.id}). Quizzes generated from "Process Document" or "Custom Quiz" will be made available to students.
                 </AlertDescription>
             </Alert>
         )}
@@ -305,6 +354,7 @@ export default function StudySmartsPage() {
             </CardTitle>
             <CardDescription>
               Enter a topic or phrase to generate a quiz without uploading a document.
+              {isTeacherOnline && " This quiz will be set for students."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -317,7 +367,11 @@ export default function StudySmartsPage() {
                   value={customQuizTopic}
                   onChange={(e) => {
                     setCustomQuizTopic(e.target.value);
-                    if (e.target.value.trim() !== "" && !isCustomQuizModeActive) {
+                    if (e.target.value.trim() === "" && isCustomQuizModeActive) {
+                        // If topic cleared, switch out of custom mode if it was active
+                        // This is debatable, user might just be editing.
+                        // For now, explicit button or file upload switches mode out.
+                    } else if (e.target.value.trim() !== "") {
                         prepareForCustomQuizGeneration();
                     }
                   }}
@@ -330,7 +384,7 @@ export default function StudySmartsPage() {
                   value={String(customNumQuestions)} 
                   onValueChange={(value) => {
                     setCustomNumQuestions(Number(value));
-                    if(!isCustomQuizModeActive) prepareForCustomQuizGeneration();
+                    if(!isCustomQuizModeActive && customQuizTopic.trim() !== "") prepareForCustomQuizGeneration();
                   }} 
                   className="flex flex-wrap gap-x-4 gap-y-2"
                 >
@@ -345,7 +399,7 @@ export default function StudySmartsPage() {
               <Button 
                 type="submit" 
                 className="w-full text-white font-semibold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
-                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary}
+                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary || customQuizTopic.trim() === ""}
               >
                 {isLoadingQuiz && isCustomQuizModeActive ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -362,10 +416,11 @@ export default function StudySmartsPage() {
           <CardHeader>
             <CardTitle className="flex items-center">
               <UploadCloud className="mr-2 h-6 w-6 text-primary" />
-              2. Process Document {currentUser?.role === 'teacher' && "(Quiz will be set for students)"}
+              2. Process Document
             </CardTitle>
             <CardDescription>
-              Alternatively, upload a PDF/text file for summary and quiz generation based on its content. Or paste content directly.
+              Alternatively, upload a PDF/text file for summary and quiz generation.
+              {isTeacherOnline && " This quiz will be set for students."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -373,7 +428,7 @@ export default function StudySmartsPage() {
               <div className="space-y-2">
                 <Label htmlFor="file-upload" className="text-sm font-medium text-foreground">Select File (PDF or .txt, .md)</Label>
                 <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} className="file:text-primary file:font-semibold"/>
-                {documentName && !isCustomQuizModeActive && (
+                {isFileUploaded && !isCustomQuizModeActive && documentName && (
                   <p className="text-sm text-muted-foreground flex items-center mt-1">
                     <FileText size={16} className="mr-1" /> Selected: {documentName}
                     {isPdfProcessing && " (Extracting text...)"}
@@ -398,15 +453,17 @@ export default function StudySmartsPage() {
                   value={isCustomQuizModeActive ? "" : documentText}
                   onChange={(e) => {
                     setDocumentText(e.target.value);
-                    if (isCustomQuizModeActive) { 
-                        setIsCustomQuizModeActive(false);
-                        setCustomQuizTopic(""); 
+                    if (e.target.value.trim() !== "" && isCustomQuizModeActive) { 
+                        prepareForDocumentProcessing();
+                    } else if (e.target.value.trim() === "" && !isFileUploaded) {
+                        // If text is cleared and no file, can imply switching modes
+                        // but better to rely on explicit mode buttons or file upload
                     }
                   }}
                   rows={8}
                   className="border-input focus:ring-primary"
                   readOnly={isPdfProcessing && !isCustomQuizModeActive}
-                  disabled={isCustomQuizModeActive}
+                  disabled={isCustomQuizModeActive && !documentText} // Allow paste if custom mode is active but user wants to switch
                 />
                  {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && documentText && !error && !isCustomQuizModeActive && (
                     <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700">
@@ -461,50 +518,83 @@ export default function StudySmartsPage() {
           </Card>
         )}
         
+        {/* Display area for summary and quiz, common for guest and teacher */}
         <div ref={quizSectionRef}>
-            {summary && !isLoadingSummary && !isCustomQuizModeActive && (isTeacherViewingOwnQuiz || isGuestViewingQuiz) && (
+            {displaySummary && !isLoadingSummary && (!isCustomQuizModeActive || displayIsCustomQuizMode) && ( // Show summary if generated (custom or doc)
               <SummaryDisplay 
-                summary={summary} 
+                summary={displaySummary} 
                 onSummaryChange={handleSummaryChange} 
                 isLoading={isLoadingSummary}
-                isEditable={currentUser?.role === 'teacher' || !currentUser} // Editable for teacher or guest
-              />
-            )}
-             {summary && !isLoadingSummary && isCustomQuizModeActive && (isGuestViewingQuiz || (currentUser?.role === 'teacher' && isCustomQuizModeActive)) && ( // Custom quiz summary view
-              <SummaryDisplay 
-                summary={summary} 
-                onSummaryChange={handleSummaryChange} 
-                isLoading={isLoadingSummary}
-                isEditable={currentUser?.role === 'teacher' || !currentUser} // Custom quiz summary also editable for creator
+                isEditable={isTeacherOnline || isGuestOnline} 
               />
             )}
 
-
-            {quiz && summary && !isLoadingQuiz && (isTeacherViewingOwnQuiz || isGuestViewingQuiz || isCustomQuizModeActive) && (
+            {displayQuiz && displaySummary && !isLoadingQuiz && (isTeacherOnline || isGuestOnline) && ( // Show quiz if generated
               <div className="mt-6">
                  <CardHeader className="px-0 pt-0 mb-2">
                     <CardTitle className="flex items-center text-xl md:text-2xl">
                         <HelpCircle className="mr-2 h-6 w-6 md:h-7 md:w-7 text-primary" /> 
-                        {isCustomQuizModeActive ? `Quiz on "${customQuizTopic}"` : "Quiz from Document"}
+                        {displayIsCustomQuizMode ? `Quiz on "${displayDocumentName?.replace(/^Custom Quiz:\s*/i, "")}"` : "Quiz from Document"}
                     </CardTitle>
                  </CardHeader>
                 <QuizDisplay 
-                  quiz={quiz} 
+                  quiz={displayQuiz} 
                   onQuizChange={handleQuizChange} 
                   isLoading={isLoadingQuiz}
-                  documentSummary={summary.summary}
-                  isEditable={currentUser?.role === 'teacher' || !currentUser} // Editable for teacher or guest
+                  documentSummary={displaySummary.summary}
+                  documentName={displayDocumentName || undefined} // Pass documentName for student attempt recording
+                  isEditable={isTeacherOnline || isGuestOnline}
                 />
               </div>
             )}
         </div>
         
-        {(summary && quiz && !isLoadingSummary && !isLoadingQuiz) && (isTeacherViewingOwnQuiz || isGuestViewingQuiz || isCustomQuizModeActive) && (
+        {/* Teacher's view of student scores */}
+        {isTeacherOnline && teacherQuizData && (
+          <Card className="shadow-lg mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Users className="mr-2 h-6 w-6 text-primary" />
+                Student Attempts for "{teacherQuizData.documentName}"
+              </CardTitle>
+              <CardDescription>
+                Scores of students who have taken this quiz. Data is cleared on page reload.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {relevantStudentAttempts.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student ID</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {relevantStudentAttempts.map((attempt, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{attempt.studentId}</TableCell>
+                        <TableCell>{attempt.score} / {attempt.totalQuestions}</TableCell>
+                        <TableCell>{new Date(attempt.timestamp).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-muted-foreground">No student attempts recorded for this quiz yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+
+        {(displaySummary && displayQuiz && !isLoadingSummary && !isLoadingQuiz) && (isTeacherOnline || isGuestOnline) && (
           <DownloadStudyAidsButton 
-            summary={summary} 
-            quiz={quiz} 
-            documentName={documentName || (isCustomQuizModeActive && customQuizTopic ? `Custom Quiz - ${customQuizTopic}` : "StudyAids")}
-            isCustomQuiz={isCustomQuizModeActive}
+            summary={displaySummary} 
+            quiz={displayQuiz} 
+            documentName={displayDocumentName || (displayIsCustomQuizMode && customQuizTopic ? `Custom Quiz - ${customQuizTopic}` : "StudyAids")}
+            isCustomQuiz={displayIsCustomQuizMode}
           />
         )}
       </main>
