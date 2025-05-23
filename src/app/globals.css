@@ -8,25 +8,25 @@ body {
 
 @layer base {
   :root {
-    --background: 206 86% 94%; /* Light Blue */
+    --background: 210 95% 95%; /* Light Blue - PRD: HSL(210, 35, 95) -> adjusted saturation for better match with #E3F2FD */
     --foreground: 210 20% 25%; /* Dark Gray for text */
     --card: 0 0% 100%; /* White */
     --card-foreground: 210 20% 25%;
     --popover: 0 0% 100%;
     --popover-foreground: 210 20% 25%;
-    --primary: 207 88% 68%; /* Soft Blue */
+    --primary: 210 60% 62%; /* Soft Blue - PRD HSL */
     --primary-foreground: 0 0% 100%; /* White */
-    --secondary: 207 70% 85%; /* Lighter shade of primary */
-    --secondary-foreground: 207 88% 25%; /* Dark blue text on light blue secondary */
-    --muted: 207 70% 90%; /* Even lighter shade for muted backgrounds */
-    --muted-foreground: 207 50% 55%; /* Grayer text for muted text */
-    --accent: 123 31% 64%; /* Subtle Green */
+    --secondary: 210 60% 85%; /* Lighter shade of primary */
+    --secondary-foreground: 210 60% 25%; /* Dark blue text on light blue secondary */
+    --muted: 210 60% 90%; /* Even lighter shade for muted backgrounds */
+    --muted-foreground: 210 40% 55%; /* Grayer text for muted text */
+    --accent: 123 50% 64%; /* Subtle Green - PRD HSL */
     --accent-foreground: 0 0% 100%; /* White */
     --destructive: 0 70% 55%; /* Softer Red */
     --destructive-foreground: 0 0% 100%;
-    --border: 207 50% 82%; /* Light blue/gray border */
+    --border: 210 60% 82%; /* Light blue/gray border */
     --input: 0 0% 100%; /* White input background */
-    --ring: 207 88% 68%; /* Primary color for focus rings */
+    --ring: 210 60% 62%; /* Primary color for focus rings */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -49,19 +49,19 @@ body {
     --card-foreground: 210 20% 90%;
     --popover: 210 20% 15%;
     --popover-foreground: 210 20% 90%;
-    --primary: 207 88% 68%; /* Soft Blue (can remain same or be adjusted) */
+    --primary: 210 60% 62%; /* Soft Blue - PRD HSL */
     --primary-foreground: 210 20% 10%; /* Dark text on Soft Blue */
-    --secondary: 207 70% 30%;
+    --secondary: 210 60% 30%;
     --secondary-foreground: 210 20% 90%;
-    --muted: 207 70% 25%;
-    --muted-foreground: 207 50% 60%;
-    --accent: 123 31% 64%; /* Subtle Green (can remain same or be adjusted) */
+    --muted: 210 60% 25%;
+    --muted-foreground: 210 40% 60%;
+    --accent: 123 50% 64%; /* Subtle Green - PRD HSL */
     --accent-foreground: 210 20% 10%; /* Dark text on Subtle Green */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 207 50% 30%;
+    --border: 210 60% 30%;
     --input: 210 20% 20%;
-    --ring: 207 88% 68%;
+    --ring: 210 60% 62%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;

@@ -2,14 +2,14 @@
 "use client";
 
 import type { GenerateQuizOutput } from "@/ai/flows/generate-quiz";
-import { generateQuizHint } from "@/ai/flows/generate-quiz-hint"; // Import the new hint flow
+import { generateQuizHint } from "@/ai/flows/generate-quiz-hint";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { HelpCircle, Edit3, CheckCircle, XCircle, Info, ListChecks, Lightbulb, Loader2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Button } from "@/components/ui/button"; // Import Button for the hint button
+import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -27,10 +27,17 @@ interface QuizDisplayProps {
   quiz: GenerateQuizOutput;
   onQuizChange: (newQuiz: GenerateQuizOutput) => void;
   isLoading: boolean;
-  documentSummary: string; // For hint context
+  documentSummary: string; 
+  isEditable?: boolean; // New prop
 }
 
-export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSummary }: QuizDisplayProps) {
+export default function QuizDisplay({ 
+  quiz, 
+  onQuizChange, 
+  isLoading, 
+  documentSummary, 
+  isEditable = true // Default to true for backward compatibility/teacher view
+}: QuizDisplayProps) {
   const [userSelections, setUserSelections] = useState<{[key: number]: string | undefined}>({});
   const [feedback, setFeedback] = useState<{[key: number]: {isCorrect: boolean, reason?: string} | undefined}>({});
   const [hints, setHints] = useState<{[key: number]: string | null | undefined}>({});
@@ -45,36 +52,24 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
   }, [quiz]);
 
   const handleQuestionTextChange = (index: number, value: string) => {
-    const updatedQuestions = quiz.questions.map((q, i) => {
-      if (i === index) {
-        // Also update the answer if the original correct option text is changed
-        // This logic might need refinement if options themselves become editable or reorderable
-        const oldAnswer = q.answer;
-        let newAnswer = q.answer;
-        if (q.options.includes(oldAnswer) && !q.options.map(opt => opt === oldAnswer ? value : opt).includes(newAnswer)) {
-            // If the question text itself was the answer and it changed, update the answer.
-            // This scenario is less likely for question text, more for option text if it were editable.
-            // For now, we assume the 'answer' field stores the text of the correct option.
-        }
-        return { ...q, question: value, answer: newAnswer };
-      }
-      return q;
-    });
+    if (!isEditable) return;
+    const updatedQuestions = quiz.questions.map((q, i) => 
+      i === index ? { ...q, question: value } : q
+    );
     onQuizChange({ questions: updatedQuestions });
   };
   
-  const handleUserSelection = (qIndex: number, selectedOption: string, reasonForCorrect: string) => {
+  const handleUserSelection = (qIndex: number, selectedOption: string) => {
     setUserSelections(prev => ({...prev, [qIndex]: selectedOption}));
     const isCorrect = quiz.questions[qIndex].answer === selectedOption;
-    setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: reasonForCorrect }}));
+    // Store the original reason from the quiz data
+    setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: quiz.questions[qIndex].reason }}));
   };
 
   const handleGetHint = async (qIndex: number) => {
     if (!quiz.questions[qIndex] || !documentSummary) return;
-
     setIsLoadingHint(prev => ({...prev, [qIndex]: true}));
-    setHints(prev => ({...prev, [qIndex]: undefined})); // Clear previous hint
-
+    setHints(prev => ({...prev, [qIndex]: undefined}));
     try {
       const result = await generateQuizHint({
         questionText: quiz.questions[qIndex].question,
@@ -83,17 +78,12 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
       setHints(prev => ({...prev, [qIndex]: result.hint}));
     } catch (error) {
       console.error("Failed to get hint:", error);
-      toast({
-        variant: "destructive",
-        title: "Hint Generation Failed",
-        description: "Could not generate a hint for this question.",
-      });
-      setHints(prev => ({...prev, [qIndex]: null})); // Indicate error or no hint
+      toast({ variant: "destructive", title: "Hint Failed", description: "Could not get hint." });
+      setHints(prev => ({...prev, [qIndex]: null}));
     } finally {
       setIsLoadingHint(prev => ({...prev, [qIndex]: false}));
     }
   };
-
 
   const score = useMemo(() => {
     const correctAnswers = Object.values(feedback).filter(f => f?.isCorrect).length;
@@ -113,12 +103,9 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
     if (!allQuestionsAttempted) return [];
     return quiz.questions.map((q, index) => ({
       questionNumber: index + 1,
-      userAnswer: userSelections[index],
-      correctAnswerText: q.answer,
       isCorrect: feedback[index]?.isCorrect ?? false,
     }));
-  }, [allQuestionsAttempted, quiz.questions, userSelections, feedback]);
-
+  }, [allQuestionsAttempted, quiz.questions, feedback]);
 
   if (isLoading) {
     return (
@@ -131,10 +118,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
             {[...Array(3)].map((_, i) => (
               <div key={i} className="p-4 border border-muted rounded animate-pulse">
                 <div className="h-6 w-full bg-muted rounded mb-2"></div>
-                <div className="h-4 w-3/4 bg-muted rounded mb-1"></div>
-                <div className="h-4 w-3/4 bg-muted rounded mb-1"></div>
-                <div className="h-4 w-3/4 bg-muted rounded mb-1"></div>
-                <div className="h-4 w-3/4 bg-muted rounded"></div>
+                {[...Array(4)].map((_, j) => <div key={j} className="h-4 w-3/4 bg-muted rounded mb-1"></div>)}
               </div>
             ))}
           </div>
@@ -148,7 +132,8 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
       <CardHeader>
         <CardTitle className="flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" /> Generated Quiz</CardTitle>
         <CardDescription>
-          Review and edit the quiz questions. Select an option to see if it's correct and view the explanation.
+          {isEditable ? "Review and edit the quiz questions. " : ""}
+          Select an option to see if it's correct and view the explanation.
           Your score and results summary will appear after attempting all questions. Use hints if you're stuck!
         </CardDescription>
       </CardHeader>
@@ -157,7 +142,8 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
           <Card key={qIndex} className="bg-card/50 p-4 shadow-md">
             <div className="flex justify-between items-start mb-2">
               <Label htmlFor={`question-${qIndex}`} className="text-base font-semibold flex items-center">
-                <Edit3 size={16} className="mr-2 text-accent" /> Question {qIndex + 1}
+                {isEditable && <Edit3 size={16} className="mr-2 text-accent" />} 
+                Question {qIndex + 1}
               </Label>
               <Button 
                 variant="outline" 
@@ -167,11 +153,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
                 className="text-xs"
                 aria-label={`Get hint for question ${qIndex + 1}`}
               >
-                {isLoadingHint[qIndex] ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : (
-                  <Lightbulb className="mr-1 h-3 w-3" />
-                )}
+                {isLoadingHint[qIndex] ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Lightbulb className="mr-1 h-3 w-3" />}
                 Get Hint
               </Button>
             </div>
@@ -181,6 +163,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
               onChange={(e) => handleQuestionTextChange(qIndex, e.target.value)}
               className="mt-1 border-input focus:ring-primary text-base"
               aria-label={`Question ${qIndex + 1} text input`}
+              readOnly={!isEditable}
             />
 
             {hints[qIndex] !== undefined && (
@@ -197,7 +180,7 @@ export default function QuizDisplay({ quiz, onQuizChange, isLoading, documentSum
               <Label className="text-sm font-medium">Options (Click to select)</Label>
               <RadioGroup 
                 value={userSelections[qIndex] || ""} 
-                onValueChange={(value) => handleUserSelection(qIndex, value, q.reason)}
+                onValueChange={(value) => handleUserSelection(qIndex, value)}
                 aria-label={`Options for question ${qIndex + 1}`}
                 className="space-y-1"
               >

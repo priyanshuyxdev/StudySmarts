@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
@@ -10,20 +11,25 @@ interface SummaryDisplayProps {
   summary: SummarizeDocumentOutput;
   onSummaryChange: (newSummary: SummarizeDocumentOutput) => void;
   isLoading: boolean;
+  isEditable?: boolean; // New prop
 }
 
-export default function SummaryDisplay({ summary, onSummaryChange, isLoading }: SummaryDisplayProps) {
+export default function SummaryDisplay({ 
+  summary, 
+  onSummaryChange, 
+  isLoading, 
+  isEditable = true // Default to true for teacher/guest
+}: SummaryDisplayProps) {
   const handleMainSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!isEditable) return;
     onSummaryChange({
       ...summary,
       summary: e.target.value,
     });
   };
 
-  // Editing section summaries is more complex, for now, they are read-only display
-  // or could be a single textarea if that's how it's structured.
-  // The current AI flow returns sectionSummaries as a single string.
   const handleSectionSummariesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!isEditable) return;
     onSummaryChange({
       ...summary,
       sectionSummaries: e.target.value,
@@ -50,39 +56,43 @@ export default function SummaryDisplay({ summary, onSummaryChange, isLoading }: 
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center"><Lightbulb className="mr-2 h-6 w-6 text-primary" /> Document Summary</CardTitle>
-        <CardDescription>Review and edit the generated summary below.</CardDescription>
+        <CardDescription>
+          {isEditable ? "Review and edit the generated summary below." : "Review the generated summary below."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
           <label htmlFor="main-summary" className="text-sm font-medium flex items-center mb-1">
-            <Edit3 size={16} className="mr-2 text-accent" />
+            {isEditable && <Edit3 size={16} className="mr-2 text-accent" />}
             Main Summary
           </label>
           <Textarea
             id="main-summary"
             value={summary.summary}
             onChange={handleMainSummaryChange}
-            rows={8}
+            rows={isEditable ? 8 : 6} // Fewer rows if not editable
             className="border-input focus:ring-primary"
             aria-label="Main summary text area"
+            readOnly={!isEditable}
           />
         </div>
 
         {summary.sectionSummaries && (
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full" defaultValue={isEditable ? undefined : "section-summaries"}>
             <AccordionItem value="section-summaries">
               <AccordionTrigger className="text-sm font-medium flex items-center hover:no-underline">
-                <Edit3 size={16} className="mr-2 text-accent" />
-                Section-by-Section Summaries (Editable)
+                {isEditable && <Edit3 size={16} className="mr-2 text-accent" />}
+                Section-by-Section Summaries {isEditable ? "(Editable)" : ""}
               </AccordionTrigger>
               <AccordionContent>
                 <Textarea
                   id="section-summaries"
                   value={summary.sectionSummaries}
                   onChange={handleSectionSummariesChange}
-                  rows={10}
+                  rows={isEditable ? 10 : 8} // Fewer rows if not editable
                   className="border-input focus:ring-primary mt-2"
                   aria-label="Section summaries text area"
+                  readOnly={!isEditable}
                 />
               </AccordionContent>
             </AccordionItem>

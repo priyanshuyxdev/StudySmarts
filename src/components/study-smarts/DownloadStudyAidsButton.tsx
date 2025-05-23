@@ -7,21 +7,41 @@ import { useToast } from "@/hooks/use-toast";
 import type { SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import type { GenerateQuizOutput } from "@/ai/flows/generate-quiz";
 import jsPDF from 'jspdf';
+import { useStudyContext } from "@/context/StudyContext"; // Import context
 
 interface DownloadStudyAidsButtonProps {
-  summary: SummarizeDocumentOutput; // For custom quizzes, this will contain a placeholder summary
-  quiz: GenerateQuizOutput;
-  documentName: string;
+  summary: SummarizeDocumentOutput | null; 
+  quiz: GenerateQuizOutput | null;
+  documentName: string | null;
   isCustomQuiz?: boolean;
 }
 
-export default function DownloadStudyAidsButton({ summary, quiz, documentName, isCustomQuiz = false }: DownloadStudyAidsButtonProps) {
+export default function DownloadStudyAidsButton({ summary: propSummary, quiz: propQuiz, documentName: propDocumentName, isCustomQuiz = false }: DownloadStudyAidsButtonProps) {
   const { toast } = useToast();
+  const { currentUser, teacherQuizData } = useStudyContext(); // Get context data
+
+  // Determine which data to use: props or context (for student downloading teacher's quiz)
+  const summaryToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.summary : propSummary;
+  const quizToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.quiz : propQuiz;
+  const documentNameToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.documentName : propDocumentName;
+  const isCustomQuizEffective = currentUser?.role === 'student' && teacherQuizData 
+    ? teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:") 
+    : isCustomQuiz;
+
 
   const handleDownload = () => {
+    if (!summaryToUse || !quizToUse || !documentNameToUse) {
+      toast({
+        variant: "destructive",
+        title: "Missing Data",
+        description: "Cannot generate PDF due to missing summary, quiz, or document name.",
+      });
+      return;
+    }
+
     toast({
       title: "Generating PDF...",
-      description: `Preparing your study aids for "${documentName}".`,
+      description: `Preparing study aids for "${documentNameToUse}".`,
     });
 
     try {
@@ -39,35 +59,29 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName, i
       };
 
       doc.setFontSize(18);
-      const title = isCustomQuiz ? `Custom Quiz: ${documentName.replace("Custom Quiz: ", "")}` : `Study Aids for: ${documentName}`;
+      const title = isCustomQuizEffective ? `Custom Quiz: ${documentNameToUse.replace(/^Custom Quiz:\s*/i, "")}` : `Study Aids for: ${documentNameToUse}`;
       yPosition = addTextWithBreaks(title, margin, yPosition, {fontSize: 18});
       yPosition += 10;
 
-      // Summary Section - only if not a custom quiz or if summary has substantial content
-      if (!isCustomQuiz && summary.summary) {
+      if (!isCustomQuizEffective && summaryToUse.summary) {
         doc.setFontSize(16);
         yPosition = addTextWithBreaks("SUMMARY", margin, yPosition, {fontSize: 16});
         yPosition += 5;
         doc.setFontSize(11);
-        yPosition = addTextWithBreaks(summary.summary, margin, yPosition, {fontSize: 11});
+        yPosition = addTextWithBreaks(summaryToUse.summary, margin, yPosition, {fontSize: 11});
         yPosition += 7;
 
-        if (summary.sectionSummaries) {
+        if (summaryToUse.sectionSummaries) {
           doc.setFontSize(14);
           yPosition = addTextWithBreaks("Section Summaries:", margin, yPosition, {fontSize: 14});
           yPosition += 5;
           doc.setFontSize(11);
-          yPosition = addTextWithBreaks(summary.sectionSummaries, margin, yPosition, {fontSize: 11});
+          yPosition = addTextWithBreaks(summaryToUse.sectionSummaries, margin, yPosition, {fontSize: 11});
           yPosition += 7;
         }
-      } else if (isCustomQuiz && summary.summary) {
-        // For custom quiz, we might have a placeholder summary like "Quiz about TOPIC"
-        // Let's skip it in PDF if it's just a placeholder, or display if it was more substantial.
-        // For now, we assume it's a placeholder and skip it.
       }
 
 
-      // Quiz Section
       if (yPosition > pageHeight - 40) { 
           doc.addPage();
           yPosition = 15;
@@ -76,7 +90,7 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName, i
       yPosition = addTextWithBreaks("QUIZ", margin, yPosition, {fontSize: 16});
       yPosition += 7;
 
-      quiz.questions.forEach((q, i) => {
+      quizToUse.questions.forEach((q, i) => {
         doc.setFontSize(12);
         const questionText = `Q${i+1}: ${q.question}`;
         
@@ -106,7 +120,7 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName, i
         yPosition += 8;
       });
 
-      const pdfFileName = `${documentName.replace(/[:/\\]/g, "_").replace(/\.[^/.]+$/, "") || "StudyAids"}_Quiz.pdf`;
+      const pdfFileName = `${documentNameToUse.replace(/[:/\\]/g, "_").replace(/\.[^/.]+$/, "") || "StudyAids"}_Quiz.pdf`;
       doc.save(pdfFileName);
       toast({
         title: "PDF Downloaded",
@@ -119,21 +133,23 @@ export default function DownloadStudyAidsButton({ summary, quiz, documentName, i
       toast({
         variant: "destructive",
         title: "PDF Generation Failed",
-        description: "An error occurred while trying to generate the PDF. Please try again.",
+        description: "An error occurred. Please try again.",
         duration: 5000,
       });
     }
   };
+
+  const isDisabled = !summaryToUse || !quizToUse || !documentNameToUse;
 
   return (
     <Button 
         onClick={handleDownload} 
         className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
         aria-label="Download study aids as PDF"
+        disabled={isDisabled}
     >
       <Download className="mr-2 h-5 w-5" />
-      Download {isCustomQuiz ? "Quiz" : "Summary & Quiz"} as PDF
+      Download {isCustomQuizEffective ? "Quiz" : "Summary & Quiz"} as PDF
     </Button>
   );
 }
-
