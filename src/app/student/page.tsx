@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStudyContext } from '@/context/StudyContext';
 import QuizDisplay from '@/components/study-smarts/QuizDisplay';
-import SummaryDisplay from '@/components/study-smarts/SummaryDisplay'; // For hint context
+// Removed: import SummaryDisplay from '@/components/study-smarts/SummaryDisplay';
 import DownloadStudyAidsButton from '@/components/study-smarts/DownloadStudyAidsButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
@@ -69,26 +69,21 @@ export default function StudentPage() {
         </CardHeader>
       </Card>
 
-      {/* Summary is displayed for context for hints, but not editable */}
-      <SummaryDisplay
-        summary={teacherQuizData.summary}
-        onSummaryChange={() => {}} // No-op as students can't edit
-        isLoading={false}
-        isEditable={false} 
-      />
+      {/* SummaryDisplay is removed for students */}
 
       <div className="mt-6">
         <QuizDisplay
           quiz={teacherQuizData.quiz}
           onQuizChange={() => {}} // No-op as students can't edit
           isLoading={false}
-          documentSummary={teacherQuizData.summary.summary}
-          isEditable={false}
+          // documentSummary prop is removed for students
+          documentName={teacherQuizData.documentName} // Pass documentName for recording attempts
+          isEditable={false} // Explicitly set to false for students
         />
       </div>
       
       <DownloadStudyAidsButton
-        summary={teacherQuizData.summary}
+        summary={teacherQuizData.summary} // Still needed for student download if they want the summary
         quiz={teacherQuizData.quiz}
         documentName={teacherQuizData.documentName}
         isCustomQuiz={teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")}

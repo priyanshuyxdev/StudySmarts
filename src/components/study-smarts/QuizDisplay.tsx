@@ -28,8 +28,8 @@ interface QuizDisplayProps {
   quiz: GenerateQuizOutput;
   onQuizChange: (newQuiz: GenerateQuizOutput) => void;
   isLoading: boolean;
-  documentSummary: string; 
-  documentName?: string; // For recording student attempt quiz name
+  documentSummary?: string; // Optional: only passed for editable quizzes (teacher/guest)
+  documentName?: string; 
   isEditable?: boolean; 
 }
 
@@ -46,9 +46,8 @@ export default function QuizDisplay({
   const [hints, setHints] = useState<{[key: number]: string | null | undefined}>({});
   const [isLoadingHint, setIsLoadingHint] = useState<{[key: number]: boolean}>({});
   const { toast } = useToast();
-  const { currentUser, recordStudentAttempt } = useStudyContext(); // Get context
+  const { currentUser, recordStudentAttempt } = useStudyContext(); 
 
-  // Reset state when the quiz itself changes
   useEffect(() => {
     setUserSelections({});
     setFeedback({});
@@ -66,12 +65,13 @@ export default function QuizDisplay({
   
   const handleUserSelection = (qIndex: number, selectedOption: string) => {
     setUserSelections(prev => ({...prev, [qIndex]: selectedOption}));
+    // Feedback state is still updated, but its display will be conditional
     const isCorrect = quiz.questions[qIndex].answer === selectedOption;
     setFeedback(prev => ({...prev, [qIndex]: { isCorrect, reason: quiz.questions[qIndex].reason }}));
   };
 
   const handleGetHint = async (qIndex: number) => {
-    if (!quiz.questions[qIndex] || !documentSummary) return;
+    if (!isEditable || !documentSummary || !quiz.questions[qIndex]) return; // Only allow hints if editable and summary exists
     setIsLoadingHint(prev => ({...prev, [qIndex]: true}));
     setHints(prev => ({...prev, [qIndex]: undefined}));
     try {
@@ -103,7 +103,6 @@ export default function QuizDisplay({
     return quiz.questions.length > 0 && score.answered === quiz.questions.length;
   }, [quiz.questions.length, score.answered]);
 
-  // Record student attempt when all questions are answered
   useEffect(() => {
     if (allQuestionsAttempted && currentUser?.role === 'student' && documentName) {
       recordStudentAttempt({
@@ -150,8 +149,8 @@ export default function QuizDisplay({
         <CardTitle className="flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" /> Generated Quiz</CardTitle>
         <CardDescription>
           {isEditable ? "Review and edit the quiz questions. " : ""}
-          Select an option to see if it's correct and view the explanation.
-          Your score and results summary will appear after attempting all questions. Use hints if you're stuck!
+          Select an answer for each question. Your score and results summary will appear after attempting all questions.
+          {isEditable && " Use hints if you're stuck!"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -162,17 +161,19 @@ export default function QuizDisplay({
                 {isEditable && <Edit3 size={16} className="mr-2 text-accent" />} 
                 Question {qIndex + 1}
               </Label>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleGetHint(qIndex)}
-                disabled={isLoadingHint[qIndex]}
-                className="text-xs"
-                aria-label={`Get hint for question ${qIndex + 1}`}
-              >
-                {isLoadingHint[qIndex] ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Lightbulb className="mr-1 h-3 w-3" />}
-                Get Hint
-              </Button>
+              {isEditable && documentSummary && ( // Only show hint button if editable and summary is available
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handleGetHint(qIndex)}
+                  disabled={isLoadingHint[qIndex]}
+                  className="text-xs"
+                  aria-label={`Get hint for question ${qIndex + 1}`}
+                >
+                  {isLoadingHint[qIndex] ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Lightbulb className="mr-1 h-3 w-3" />}
+                  Get Hint
+                </Button>
+              )}
             </div>
             <Input
               id={`question-${qIndex}`}
@@ -183,7 +184,7 @@ export default function QuizDisplay({
               readOnly={!isEditable}
             />
 
-            {hints[qIndex] !== undefined && (
+            {isEditable && hints[qIndex] !== undefined && ( // Only show hint if editable
               <Alert variant="default" className="mt-3 bg-yellow-50 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700">
                 <Lightbulb className="h-4 w-4 text-yellow-700 dark:text-yellow-400" />
                 <AlertTitle className="text-yellow-700 dark:text-yellow-400">Hint</AlertTitle>
@@ -207,16 +208,17 @@ export default function QuizDisplay({
                     key={oIndex}
                     className={cn(
                       "flex items-center space-x-3 p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors",
-                      userSelections[qIndex] === option && feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "",
-                      userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false ? "border-red-500 bg-red-50 dark:bg-red-900/30" : ""
+                      isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "",
+                      isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false ? "border-red-500 bg-red-50 dark:bg-red-900/30" : "",
+                      !isEditable && userSelections[qIndex] === option ? "bg-muted" : "" // Style selected option for student without correctness indication
                     )}
                   >
                     <RadioGroupItem value={option} id={`q${qIndex}-option${oIndex}`} className="shrink-0" />
                     <span className="flex-grow text-sm">{option}</span>
-                    {userSelections[qIndex] === option && feedback[qIndex]?.isCorrect && (
+                    {isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect && (
                       <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
                     )}
-                    {userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false && (
+                    {isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false && (
                       <XCircle className="h-5 w-5 text-red-500 shrink-0" />
                     )}
                   </Label>
@@ -224,7 +226,7 @@ export default function QuizDisplay({
               </RadioGroup>
             </div>
             
-            {feedback[qIndex] && (
+            {isEditable && feedback[qIndex] && ( // Only show immediate feedback if editable
               <>
                 <Alert 
                   variant={feedback[qIndex]?.isCorrect ? "default" : "destructive"} 
