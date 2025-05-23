@@ -188,8 +188,6 @@ export default function StudySmartsPage() {
     setError(null);
     setSummary(null);
     setQuiz(null);
-    // setIsCustomQuizModeActive(false); // Already handled by mode prep
-    // setCustomQuizTopic(""); 
     setIsLoadingSummary(true);
     setIsLoadingQuiz(false);
 
@@ -208,6 +206,7 @@ export default function StudySmartsPage() {
 
         if (currentUser?.role === 'teacher' && documentName) {
           setTeacherQuizData({ summary: summaryResult, quiz: quizResult, documentName });
+           toast({ title: "Quiz Set for Students", description: `Quiz "${documentName}" is now available.` });
         }
       } catch (quizError: any) {
         setError("Failed to generate quiz: " + quizError.message);
@@ -235,12 +234,11 @@ export default function StudySmartsPage() {
       return;
     }
     
-    // prepareForCustomQuizGeneration(); // Already handled by typing in topic
     setError(null);
-    setSummary(null); // Clear previous summary/quiz before generating new custom one
+    setSummary(null); 
     setQuiz(null);
     setIsLoadingQuiz(true);
-    setIsLoadingSummary(false); // No summary gen for custom quiz path
+    setIsLoadingSummary(false); 
     
     const tempDocName = `Custom Quiz: ${customQuizTopic}`;
     setDocumentName(tempDocName);
@@ -252,20 +250,16 @@ export default function StudySmartsPage() {
         sectionSummaries: undefined 
       };
       setQuiz(customQuizResult);
-      setSummary(placeholderSummary); // Set placeholder summary for QuizDisplay context
+      setSummary(placeholderSummary); 
       setScrollToQuizSignal(true);
       toast({ title: "Custom Quiz Generated", description: `Quiz for "${customQuizTopic}" is ready.` });
 
       if (currentUser?.role === 'teacher') {
-         // Teachers generating custom quiz can also set it if they wish.
-         // For now, only document-based quizzes from teachers are *automatically* set for students.
-         // To allow teachers to set custom quizzes:
          setTeacherQuizData({ summary: placeholderSummary, quiz: customQuizResult, documentName: tempDocName });
-         toast({ title: "Custom Quiz Set", description: "This custom quiz is now available for students." });
+         toast({ title: "Custom Quiz Set for Students", description: `Quiz "${tempDocName}" is now available.` });
       }
 
-    } catch (customQuizError: any)
-{
+    } catch (customQuizError: any) {
       setError("Failed to generate custom quiz: " + customQuizError.message);
       toast({ variant: "destructive", title: "Custom Quiz Failed", description: "Generation failed."});
     } finally {
@@ -290,24 +284,19 @@ export default function StudySmartsPage() {
   const totalLoadingProgress = () => {
     if (isPdfProcessing && !isCustomQuizModeActive) return 15;
     if (isLoadingSummary && !summary && !isCustomQuizModeActive) return 30;
-    if (isLoadingQuiz) return 75; // Covers both quiz types
+    if (isLoadingQuiz) return 75; 
     if ((summary && quiz && !isCustomQuizModeActive) || (quiz && isCustomQuizModeActive && summary)) return 100;
     return 0;
   }
 
-  // For teacher's view of student scores
   const relevantStudentAttempts = studentAttempts.filter(
-    attempt => attempt.quizName === teacherQuizData?.documentName
+    attempt => teacherQuizData && attempt.quizName === teacherQuizData.documentName
   );
 
-  // Determine who is viewing the page for conditional rendering
   const isTeacherOnline = currentUser?.role === 'teacher';
   const isStudentOnline = currentUser?.role === 'student';
   const isGuestOnline = !currentUser;
 
-  // What content to display (summary/quiz)
-  // Teacher: Displays their own generated content (from state, or context if reloaded)
-  // Guest: Displays locally generated content
   const displaySummary = (isTeacherOnline && teacherQuizData) ? teacherQuizData.summary : summary;
   const displayQuiz = (isTeacherOnline && teacherQuizData) ? teacherQuizData.quiz : quiz;
   const displayDocumentName = (isTeacherOnline && teacherQuizData) ? teacherQuizData.documentName : documentName;
@@ -339,9 +328,9 @@ export default function StudySmartsPage() {
         { isTeacherOnline && (
              <Alert variant="default" className="bg-primary/10 border-primary/30">
                 <Briefcase className="h-5 w-5 text-primary" />
-                <AlertTitle className="text-primary font-semibold">Teacher Mode Activated</AlertTitle>
+                <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
-                    You are logged in as Teacher ({currentUser.id}). Quizzes generated from "Process Document" or "Custom Quiz" will be made available to students.
+                    Quizzes you generate or set active here will be available for students. View student attempts for the active quiz below.
                 </AlertDescription>
             </Alert>
         )}
@@ -354,7 +343,7 @@ export default function StudySmartsPage() {
             </CardTitle>
             <CardDescription>
               Enter a topic or phrase to generate a quiz without uploading a document.
-              {isTeacherOnline && " This quiz will be set for students."}
+              {isTeacherOnline && " This quiz will be set for students if generated."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -367,11 +356,7 @@ export default function StudySmartsPage() {
                   value={customQuizTopic}
                   onChange={(e) => {
                     setCustomQuizTopic(e.target.value);
-                    if (e.target.value.trim() === "" && isCustomQuizModeActive) {
-                        // If topic cleared, switch out of custom mode if it was active
-                        // This is debatable, user might just be editing.
-                        // For now, explicit button or file upload switches mode out.
-                    } else if (e.target.value.trim() !== "") {
+                    if (e.target.value.trim() !== "") {
                         prepareForCustomQuizGeneration();
                     }
                   }}
@@ -420,7 +405,7 @@ export default function StudySmartsPage() {
             </CardTitle>
             <CardDescription>
               Alternatively, upload a PDF/text file for summary and quiz generation.
-              {isTeacherOnline && " This quiz will be set for students."}
+              {isTeacherOnline && " This quiz will be set for students if generated."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -455,15 +440,12 @@ export default function StudySmartsPage() {
                     setDocumentText(e.target.value);
                     if (e.target.value.trim() !== "" && isCustomQuizModeActive) { 
                         prepareForDocumentProcessing();
-                    } else if (e.target.value.trim() === "" && !isFileUploaded) {
-                        // If text is cleared and no file, can imply switching modes
-                        // but better to rely on explicit mode buttons or file upload
                     }
                   }}
                   rows={8}
                   className="border-input focus:ring-primary"
                   readOnly={isPdfProcessing && !isCustomQuizModeActive}
-                  disabled={isCustomQuizModeActive && !documentText} // Allow paste if custom mode is active but user wants to switch
+                  disabled={isCustomQuizModeActive && !documentText} 
                 />
                  {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && documentText && !error && !isCustomQuizModeActive && (
                     <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700">
@@ -518,9 +500,8 @@ export default function StudySmartsPage() {
           </Card>
         )}
         
-        {/* Display area for summary and quiz, common for guest and teacher */}
         <div ref={quizSectionRef}>
-            {displaySummary && !isLoadingSummary && (!isCustomQuizModeActive || displayIsCustomQuizMode) && ( // Show summary if generated (custom or doc)
+            {displaySummary && !isLoadingSummary && (!isCustomQuizModeActive || displayIsCustomQuizMode) && (
               <SummaryDisplay 
                 summary={displaySummary} 
                 onSummaryChange={handleSummaryChange} 
@@ -529,7 +510,7 @@ export default function StudySmartsPage() {
               />
             )}
 
-            {displayQuiz && displaySummary && !isLoadingQuiz && (isTeacherOnline || isGuestOnline) && ( // Show quiz if generated
+            {displayQuiz && displaySummary && !isLoadingQuiz && (isTeacherOnline || isGuestOnline) && (
               <div className="mt-6">
                  <CardHeader className="px-0 pt-0 mb-2">
                     <CardTitle className="flex items-center text-xl md:text-2xl">
@@ -542,15 +523,23 @@ export default function StudySmartsPage() {
                   onQuizChange={handleQuizChange} 
                   isLoading={isLoadingQuiz}
                   documentSummary={displaySummary.summary}
-                  documentName={displayDocumentName || undefined} // Pass documentName for student attempt recording
+                  documentName={displayDocumentName || undefined} 
                   isEditable={isTeacherOnline || isGuestOnline}
                 />
               </div>
             )}
         </div>
         
-        {/* Teacher's view of student scores */}
-        {isTeacherOnline && teacherQuizData && (
+        {(displaySummary && displayQuiz && !isLoadingSummary && !isLoadingQuiz) && (isTeacherOnline || isGuestOnline) && (
+          <DownloadStudyAidsButton 
+            summary={displaySummary} 
+            quiz={displayQuiz} 
+            documentName={displayDocumentName || (displayIsCustomQuizMode && customQuizTopic ? `Custom Quiz - ${customQuizTopic}` : "StudyAids")}
+            isCustomQuiz={displayIsCustomQuizMode}
+          />
+        )}
+
+        {isTeacherOnline && teacherQuizData && teacherQuizData.documentName && (
           <Card className="shadow-lg mt-8">
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -558,7 +547,7 @@ export default function StudySmartsPage() {
                 Student Attempts for "{teacherQuizData.documentName}"
               </CardTitle>
               <CardDescription>
-                Scores of students who have taken this quiz. Data is cleared on page reload.
+                Scores of students who have taken this quiz. Data is cleared on page reload or when a new quiz is set.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -588,15 +577,6 @@ export default function StudySmartsPage() {
           </Card>
         )}
 
-
-        {(displaySummary && displayQuiz && !isLoadingSummary && !isLoadingQuiz) && (isTeacherOnline || isGuestOnline) && (
-          <DownloadStudyAidsButton 
-            summary={displaySummary} 
-            quiz={displayQuiz} 
-            documentName={displayDocumentName || (displayIsCustomQuizMode && customQuizTopic ? `Custom Quiz - ${customQuizTopic}` : "StudyAids")}
-            isCustomQuiz={displayIsCustomQuizMode}
-          />
-        )}
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center p-4">
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
@@ -604,3 +584,4 @@ export default function StudySmartsPage() {
     </div>
   );
 }
+
