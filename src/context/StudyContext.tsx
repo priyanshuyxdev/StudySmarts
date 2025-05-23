@@ -36,10 +36,15 @@ interface StudyContextType {
   recordStudentAttempt: (attempt: Omit<StudentAttempt, 'timestamp'>) => void;
 }
 
-const TEACHER_ID = "vikas sir";
+const TEACHER_ID = "vikas"; // Updated Teacher ID
 const TEACHER_PASSWORD = "vikas123";
-const STUDENT_ID = "priyanshu";
-const STUDENT_PASSWORD = "21221079";
+
+// Updated student credentials structure
+const studentCredentials = [
+  { id: "priyanshu", password: "priyanshu123" },
+  { id: "tushar", password: "tushar123" },
+  { id: "ritik", password: "ritik123" },
+];
 
 const StudyContext = createContext<StudyContextType | undefined>(undefined);
 
@@ -51,15 +56,18 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const loginUser = useCallback((role: 'student' | 'teacher', idInput: string, passwordInput: string): boolean => {
     if (role === 'teacher') {
-      if (idInput.toLowerCase() === TEACHER_ID && passwordInput === TEACHER_PASSWORD) {
+      if (idInput.toLowerCase() === TEACHER_ID.toLowerCase() && passwordInput === TEACHER_PASSWORD) {
         setCurrentUser({ role: 'teacher', id: TEACHER_ID });
         toast({ title: "Login Successful", description: "Welcome, Teacher!" });
         return true;
       }
     } else if (role === 'student') {
-      if (idInput.toLowerCase() === STUDENT_ID && passwordInput === STUDENT_PASSWORD) {
-        setCurrentUser({ role: 'student', id: STUDENT_ID });
-        toast({ title: "Login Successful", description: "Welcome, Student!" });
+      const matchedStudent = studentCredentials.find(
+        student => student.id.toLowerCase() === idInput.toLowerCase() && student.password === passwordInput
+      );
+      if (matchedStudent) {
+        setCurrentUser({ role: 'student', id: matchedStudent.id });
+        toast({ title: "Login Successful", description: `Welcome, ${matchedStudent.id}!` });
         return true;
       }
     }
@@ -70,8 +78,6 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const logoutUser = useCallback(() => {
     const previousRole = currentUser?.role;
     setCurrentUser(null);
-    // If a teacher logs out, clear their "set" quiz.
-    // Student attempts remain for now, as they are not tied to a session.
     if (previousRole === 'teacher') {
       // setTeacherQuizDataState(null); // Keep quiz data for now, teacher might log back in.
     }
@@ -80,16 +86,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const setTeacherQuizData = useCallback((data: TeacherQuizData) => {
     setTeacherQuizDataState(data);
-    // When a new quiz is set by the teacher, clear attempts for the *previous* quiz from view if desired
-    // Or, filter attempts on the display side. For now, we'll just add and display.
     toast({ title: "Quiz Set", description: `Quiz "${data.documentName}" is now active for students.` });
   }, [toast]);
 
   const recordStudentAttempt = useCallback((attempt: Omit<StudentAttempt, 'timestamp'>) => {
     setStudentAttempts(prevAttempts => {
-      // Optionally, prevent duplicate submissions for the same quiz by the same student or update existing
       const newAttempt = { ...attempt, timestamp: Date.now() };
-      // Simple add for now.
       return [...prevAttempts, newAttempt];
     });
     toast({ title: "Quiz Submitted", description: `Your score: ${attempt.score}/${attempt.totalQuestions}` });
