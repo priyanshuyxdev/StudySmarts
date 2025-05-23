@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import type { GenerateQuizOutput } from "@/ai/flows/generate-quiz";
 import jsPDF from 'jspdf';
-import { useStudyContext } from "@/context/StudyContext"; // Import context
+import { useStudyContext } from "@/context/StudyContext";
 
 interface DownloadStudyAidsButtonProps {
   summary: SummarizeDocumentOutput | null; 
@@ -18,19 +18,21 @@ interface DownloadStudyAidsButtonProps {
 
 export default function DownloadStudyAidsButton({ summary: propSummary, quiz: propQuiz, documentName: propDocumentName, isCustomQuiz = false }: DownloadStudyAidsButtonProps) {
   const { toast } = useToast();
-  const { currentUser, teacherQuizData } = useStudyContext(); // Get context data
+  const { currentUser, teacherQuizData } = useStudyContext();
 
-  // Determine which data to use: props or context (for student downloading teacher's quiz)
   const summaryToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.summary : propSummary;
   const quizToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.quiz : propQuiz;
-  const documentNameToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.documentName : propDocumentName;
+  const documentNameToUse = currentUser?.role === 'student' && teacherQuizData 
+    ? teacherQuizData.documentName 
+    : (propDocumentName || (isCustomQuiz ? "Custom Quiz" : "Study Aids"));
+
   const isCustomQuizEffective = currentUser?.role === 'student' && teacherQuizData 
     ? teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:") 
     : isCustomQuiz;
 
 
   const handleDownload = () => {
-    if (!summaryToUse || !quizToUse || !documentNameToUse) {
+    if ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse) {
       toast({
         variant: "destructive",
         title: "Missing Data",
@@ -41,7 +43,7 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
 
     toast({
       title: "Generating PDF...",
-      description: `Preparing study aids for "${documentNameToUse}".`,
+      description: `Preparing study aids for "${documentNameToUse}". This may take a moment.`,
     });
 
     try {
@@ -59,11 +61,13 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
       };
 
       doc.setFontSize(18);
-      const title = isCustomQuizEffective ? `Custom Quiz: ${documentNameToUse.replace(/^Custom Quiz:\s*/i, "")}` : `Study Aids for: ${documentNameToUse}`;
-      yPosition = addTextWithBreaks(title, margin, yPosition, {fontSize: 18});
+      const titleBase = documentNameToUse.startsWith("Custom Quiz: ") 
+        ? documentNameToUse 
+        : `Study Aids for: ${documentNameToUse}`;
+      yPosition = addTextWithBreaks(titleBase, margin, yPosition, {fontSize: 18});
       yPosition += 10;
 
-      if (!isCustomQuizEffective && summaryToUse.summary) {
+      if (!isCustomQuizEffective && summaryToUse?.summary) {
         doc.setFontSize(16);
         yPosition = addTextWithBreaks("SUMMARY", margin, yPosition, {fontSize: 16});
         yPosition += 5;
@@ -97,7 +101,7 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
         const questionLines = doc.splitTextToSize(questionText, maxLineWidth);
         let optionsHeight = 0;
         q.options.forEach(opt => {
-            optionsHeight += doc.splitTextToSize(opt, maxLineWidth - 5).length * 5;
+            optionsHeight += doc.splitTextToSize(opt, maxLineWidth - 5).length * 5; // Approx line height
         });
         const reasonLines = doc.splitTextToSize(`Reason: ${q.reason}`, maxLineWidth);
         const estimatedHeight = (questionLines.length * 5) + optionsHeight + (reasonLines.length * 5) + 10;
@@ -120,7 +124,8 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
         yPosition += 8;
       });
 
-      const pdfFileName = `${documentNameToUse.replace(/[:/\\]/g, "_").replace(/\.[^/.]+$/, "") || "StudyAids"}_Quiz.pdf`;
+      const safeDocumentName = documentNameToUse.replace(/[:/\\]/g, "_").replace(/\.[^/.]+$/, "");
+      const pdfFileName = `${safeDocumentName || "StudyAids"}_Generated.pdf`;
       doc.save(pdfFileName);
       toast({
         title: "PDF Downloaded",
@@ -139,7 +144,7 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
     }
   };
 
-  const isDisabled = !summaryToUse || !quizToUse || !documentNameToUse;
+  const isDisabled = ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse);
 
   return (
     <Button 
@@ -153,3 +158,5 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
     </Button>
   );
 }
+
+    

@@ -5,10 +5,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStudyContext } from '@/context/StudyContext';
 import QuizDisplay from '@/components/study-smarts/QuizDisplay';
-// Removed: import SummaryDisplay from '@/components/study-smarts/SummaryDisplay';
 import DownloadStudyAidsButton from '@/components/study-smarts/DownloadStudyAidsButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, Loader2, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function StudentPage() {
@@ -17,10 +16,8 @@ export default function StudentPage() {
 
   useEffect(() => {
     if (currentUser === null) {
-      // If not logged in at all, redirect to home, navbar will offer login
       router.push('/');
     } else if (currentUser.role !== 'student') {
-      // If logged in but not as student, redirect to home
       router.push('/');
     }
   }, [currentUser, router]);
@@ -37,18 +34,26 @@ export default function StudentPage() {
   if (!teacherQuizData) {
     return (
       <main className="w-full max-w-2xl mx-auto space-y-6 p-4 md:p-8 mt-8">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg border-primary/50">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <AlertCircle className="mr-2 h-6 w-6 text-yellow-500" />
-              No Quiz Available
+              <Smile className="mr-2 h-7 w-7 text-primary" />
+              No Quiz Available Yet!
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Your teacher has not set a quiz yet. Please check back later.
+          <CardContent className="text-center">
+            <p className="text-muted-foreground mb-4">
+              Your teacher hasn't set a quiz yet. Please check back later or enjoy your free time!
             </p>
-            <Button onClick={() => router.push('/')} className="mt-4">Go to Home</Button>
+            <img 
+              data-ai-hint="relaxing student" 
+              src="https://placehold.co/400x250.png" 
+              alt="Relaxing student illustration" 
+              className="mx-auto rounded-md shadow-md mb-4" 
+            />
+            <Button onClick={() => router.push('/')} className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
+              Go to Home Page
+            </Button>
           </CardContent>
         </Card>
       </main>
@@ -61,29 +66,26 @@ export default function StudentPage() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <CheckCircle className="mr-2 h-7 w-7 text-green-500" />
-            Assigned Quiz: {teacherQuizData.documentName}
+            Assigned Quiz
           </CardTitle>
           <CardDescription>
-            This quiz has been assigned by your teacher. Please complete it. Your results will be shown at the end.
+            This quiz, "{teacherQuizData.documentName}", has been assigned by your teacher. Please complete it. Your results will be shown at the end.
           </CardDescription>
         </CardHeader>
       </Card>
 
-      {/* SummaryDisplay is removed for students */}
-
       <div className="mt-6">
         <QuizDisplay
           quiz={teacherQuizData.quiz}
-          onQuizChange={() => {}} // No-op as students can't edit
+          onQuizChange={() => {}} 
           isLoading={false}
-          // documentSummary prop is removed for students
-          documentName={teacherQuizData.documentName} // Pass documentName for recording attempts
-          isEditable={false} // Explicitly set to false for students
+          documentName={teacherQuizData.documentName}
+          isEditable={false} 
         />
       </div>
       
       <DownloadStudyAidsButton
-        summary={teacherQuizData.summary} // Still needed for student download if they want the summary
+        summary={teacherQuizData.summary} 
         quiz={teacherQuizData.quiz}
         documentName={teacherQuizData.documentName}
         isCustomQuiz={teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")}
@@ -94,3 +96,5 @@ export default function StudentPage() {
     </main>
   );
 }
+
+    
