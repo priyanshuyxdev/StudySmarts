@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, User, Briefcase, LogOut, BookOpenCheck, Sun, Moon } from 'lucide-react';
+import { Home, User, Briefcase, LogOut, BookOpenCheck, Sun, Moon, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/auth/AuthModal';
 import { useStudyContext } from '@/context/StudyContext';
@@ -16,6 +16,7 @@ export default function Navbar() {
   const { currentUser, logoutUser } = useStudyContext();
   const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -26,6 +27,18 @@ export default function Navbar() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Clock effect
+    const timerId = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString());
+    }, 1000);
+
+    // Set initial time after mount to avoid hydration mismatch
+    setCurrentTime(new Date().toLocaleTimeString());
+
+    return () => {
+      clearInterval(timerId);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -50,19 +63,14 @@ export default function Navbar() {
       setAuthRole(role);
       setIsAuthModalOpen(true);
     }
-    // If already logged in as the correct role and trying to click the link,
-    // Next.js Link component will handle navigation if it's a Link.
-    // If it's a button for a role not yet logged into, it opens the modal.
   };
 
   const isHomeActive = pathname === '/';
   const isStudentActive = pathname === '/student';
-  // Teacher is active on '/' if logged in as teacher
   const isTeacherActive = pathname === '/' && currentUser?.role === 'teacher';
 
-  const baseNavButtonClasses = "transition-all duration-200 ease-in-out text-sm sm:text-base px-2 sm:px-3 rounded-none"; // rounded-none to prevent button's default rounding interfering with border
+  const baseNavButtonClasses = "transition-all duration-200 ease-in-out text-sm sm:text-base px-2 sm:px-3 rounded-none";
   const activeNavButtonClasses = "border-b-2 border-primary text-primary font-semibold";
-  // Added hover:bg-transparent to ensure only underline effect
   const inactiveNavButtonHoverClasses = "text-foreground hover:bg-transparent hover:border-b-2 hover:border-primary/70 hover:text-primary/80";
 
 
@@ -75,7 +83,7 @@ export default function Navbar() {
             StudySmarts
           </Link>
 
-          <div className="space-x-1 sm:space-x-2 flex items-center">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Link href="/" passHref>
               <Button 
                 variant="ghost"
@@ -111,7 +119,6 @@ export default function Navbar() {
             )}
 
             {currentUser?.role === 'teacher' ? (
-                 // Teacher link points to home, active state depends on being on home + teacher role
                  <Link href="/" passHref> 
                     <Button 
                       variant="ghost"
@@ -133,25 +140,33 @@ export default function Navbar() {
                 </Button>
             )}
 
-            {currentUser && (
+            <div className="flex items-center space-x-2 sm:space-x-3 ml-2">
+              {currentUser && (
+                <Button 
+                  variant="outline" 
+                  onClick={logoutUser} 
+                  size="sm" 
+                  className="flex items-center text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out rounded-md"
+                >
+                  <LogOut className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Logout ({currentUser.id})
+                </Button>
+              )}
+              {currentTime && (
+                <div className="flex items-center text-xs sm:text-sm text-muted-foreground font-medium p-1.5 rounded-md bg-muted/50 shadow-sm">
+                  <Clock className="mr-1.5 h-4 w-4 text-primary" />
+                  {currentTime}
+                </div>
+              )}
               <Button 
-                variant="outline" 
-                onClick={logoutUser} 
-                size="sm" 
-                className="flex items-center text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out rounded-md" // Added rounded-md back
+                onClick={toggleTheme} 
+                variant="ghost" 
+                size="icon" 
+                className="hover:bg-accent/50 transition-colors duration-150 ease-in-out rounded-full"
               >
-                <LogOut className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Logout ({currentUser.id})
+                {theme === 'light' ? <Moon className="h-5 w-5 sm:h-6 sm:w-6" /> : <Sun className="h-5 w-5 sm:h-6 sm:w-6" />}
+                <span className="sr-only">Toggle theme</span>
               </Button>
-            )}
-            <Button 
-              onClick={toggleTheme} 
-              variant="ghost" 
-              size="icon" 
-              className="ml-1 sm:ml-2 hover:bg-accent/50 transition-colors duration-150 ease-in-out rounded-full"
-            >
-              {theme === 'light' ? <Moon className="h-5 w-5 sm:h-6 sm:w-6" /> : <Sun className="h-5 w-5 sm:h-6 sm:w-6" />}
-              <span className="sr-only">Toggle theme</span>
-            </Button>
+            </div>
           </div>
         </div>
       </nav>
