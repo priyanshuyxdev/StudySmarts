@@ -40,8 +40,10 @@ interface StudyContextType {
   recordStudentAttempt: (attempt: Omit<StudentAttempt, 'timestamp'>) => void;
 }
 
-const TEACHER_ID = "vikas";
-const TEACHER_PASSWORD = "vikas123";
+const teacherCredentials = [
+  { id: "vikas", password: "vikas123" },
+  { id: "teacher", password: "teacher123" },
+];
 
 const studentCredentials = [
   { id: "priyanshu", password: "priyanshu123" },
@@ -84,9 +86,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const loginUser = useCallback((role: 'student' | 'teacher', idInput: string, passwordInput: string): boolean => {
     if (role === 'teacher') {
-      if (idInput.toLowerCase() === TEACHER_ID.toLowerCase() && passwordInput === TEACHER_PASSWORD) {
-        setCurrentUser({ role: 'teacher', id: TEACHER_ID });
-        toast({ title: "Login Successful", description: "Welcome, Teacher!" });
+      const matchedTeacher = teacherCredentials.find(
+        teacher => teacher.id.toLowerCase() === idInput.toLowerCase() && teacher.password === passwordInput
+      );
+      if (matchedTeacher) {
+        setCurrentUser({ role: 'teacher', id: matchedTeacher.id });
+        toast({ title: "Login Successful", description: `Welcome, Teacher ${matchedTeacher.id}!` });
         return true;
       }
     } else if (role === 'student') {
