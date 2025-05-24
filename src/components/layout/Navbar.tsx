@@ -62,7 +62,8 @@ export default function Navbar() {
 
   const baseNavButtonClasses = "transition-all duration-200 ease-in-out text-sm sm:text-base px-2 sm:px-3 rounded-none"; // rounded-none to prevent button's default rounding interfering with border
   const activeNavButtonClasses = "border-b-2 border-primary text-primary font-semibold";
-  const inactiveNavButtonHoverClasses = "text-foreground hover:border-b-2 hover:border-primary/70 hover:text-primary/80";
+  // Added hover:bg-transparent to ensure only underline effect
+  const inactiveNavButtonHoverClasses = "text-foreground hover:bg-transparent hover:border-b-2 hover:border-primary/70 hover:text-primary/80";
 
 
   return (
