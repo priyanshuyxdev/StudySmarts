@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, User, Bot, Loader2, X } from 'lucide-react';
+import { Sparkles, Send, User, Bot, Loader2, X } from 'lucide-react'; // Changed MessageSquare to Sparkles
 import { chatWithBot, type ChatWithBotOutput } from '@/ai/flows/chat-flow';
 import { useToast } from '@/hooks/use-toast';
 
@@ -89,10 +89,10 @@ export default function ChatBot() {
         onClick={handleOpen}
         variant="outline"
         size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 animate-bounce z-50"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 z-50" // Removed animate-bounce
         aria-label="Open Chatbot"
       >
-        <MessageSquare className="h-7 w-7" />
+        <Sparkles className="h-7 w-7" /> 
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
