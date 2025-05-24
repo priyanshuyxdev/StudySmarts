@@ -104,19 +104,13 @@ export default function StudySmartsPage() {
             setCustomQuizTopic(""); 
         }
       } else {
-         if (!isCustomQuizModeActive && !documentText && !customQuizTopic) {
-            resetAllLocalCreationState();
-        }
+         // When teacherQuizData is null (cleared), reset local creation state
+         resetAllLocalCreationState();
       }
     } else if (isStudentOnline) {
-      resetAllLocalCreationState();
-    } else { 
-      if (!teacherQuizData && (summary || quiz || documentName)) {
-      } else if (teacherQuizData && !isTeacherOnline) {
-        if (documentName === teacherQuizData.documentName) {
-        }
-      }
+      resetAllLocalCreationState(); // Students don't create, always reset their local creation state
     }
+    // For guests, local state persists unless teacherQuizData from context is present (which it shouldn't be for a guest)
   }, [currentUser, teacherQuizData, isTeacherOnline, isStudentOnline]);
 
 
@@ -744,17 +738,17 @@ export default function StudySmartsPage() {
 
         {isTeacherOnline && teacherQuizData && (
           <div ref={studentAttemptsSectionRef} className="mt-8">
-            <Card className="shadow-xl border-2 border-green-300 dark:border-green-700/80 rounded-xl overflow-hidden">
+            <Card key={teacherQuizData.documentName} className="shadow-xl border-2 border-green-300 dark:border-green-700/80 rounded-xl overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-5 sm:p-6">
                 <CardTitle className="flex items-center text-lg sm:text-xl">
                   <Users className="mr-2 h-6 w-6 text-green-600 dark:text-green-400" />
                   Student Attempts for "{teacherQuizData.documentName}"
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  Scores of students who have attempted this quiz. Data persists in this browser session only.
+                  Scores of students who have attempted this quiz. Data persists in this browser session (same browser, same computer).
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0 sm:p-0"> {/* Adjusted padding for table */}
+              <CardContent className="p-0 sm:p-0">
                 {filteredStudentAttempts.length > 0 ? (
                   <Table>
                     <TableHeader>
