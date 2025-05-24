@@ -431,8 +431,6 @@ export default function StudySmartsPage() {
                 <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
             </footer>
-            <ChatBot />
-            <TimerClockDialog />
         </main>
     )
   }
@@ -684,7 +682,7 @@ export default function StudySmartsPage() {
                   effectiveSummary && 
                   !effectiveIsCustomQuizMode && 
                   !isLoadingSummary && (
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <DownloadStudyAidsButton 
                         summary={effectiveSummary}
                         quiz={null} 
@@ -694,7 +692,7 @@ export default function StudySmartsPage() {
                     />
                     <Button
                       onClick={handleGenerateFlashcards}
-                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3"
+                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3 h-full"
                       disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
                     >
                       {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}

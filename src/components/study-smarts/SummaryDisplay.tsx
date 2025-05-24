@@ -62,19 +62,21 @@ export default function SummaryDisplay({
   
   return (
     <Card className="shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="flex items-center"><Lightbulb className="mr-2 h-6 w-6 text-primary" /> Document Summary</CardTitle>
-          <CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between p-5 sm:p-6">
+        <div className="flex-grow">
+          <CardTitle className="flex items-center text-lg sm:text-xl">
+            <Lightbulb className="mr-2 h-6 w-6 text-primary" /> Document Summary
+          </CardTitle>
+          <CardDescription className="text-sm">
             {isEditable ? "Review and edit the generated summary below." : "Review the generated summary below."}
           </CardDescription>
         </div>
-        <Button onClick={toggleExpand} variant="outline" size="sm" className="shadow-sm hover:shadow transition-shadow">
+        <Button onClick={toggleExpand} variant="outline" size="sm" className="shadow-sm hover:shadow transition-shadow ml-4">
           {isExpanded ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
           {isExpanded ? "Collapse" : "Expand"}
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-5 sm:p-6 pt-0">
         <div>
           <label htmlFor="main-summary" className="text-sm font-medium flex items-center mb-1">
             {isEditable && <Edit3 size={16} className="mr-2 text-accent" />}
@@ -118,3 +120,4 @@ export default function SummaryDisplay({
     </Card>
   );
 }
+
