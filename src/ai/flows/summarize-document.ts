@@ -11,8 +11,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const SummaryLengthEnum = z.enum(['brief', 'medium', 'detailed']).describe("The desired length of the summary.");
+export type SummaryLength = z.infer<typeof SummaryLengthEnum>;
+
 const SummarizeDocumentInputSchema = z.object({
   documentText: z.string().describe('The text content of the document to summarize.'),
+  summaryLength: SummaryLengthEnum.optional().describe("Optional: Desired length for the main summary: 'brief', 'medium', or 'detailed'."),
+  summaryFocus: z.string().optional().describe("Optional: A specific topic or keyword to focus on in the summary."),
 });
 export type SummarizeDocumentInput = z.infer<typeof SummarizeDocumentInputSchema>;
 
@@ -30,14 +35,24 @@ const prompt = ai.definePrompt({
   name: 'summarizeDocumentPrompt',
   input: {schema: SummarizeDocumentInputSchema},
   output: {schema: SummarizeDocumentOutputSchema},
-  prompt: `You are an expert summarizer. Please provide a **detailed** summary of the following document.
+  prompt: `You are an expert summarizer. Please provide a summary of the following document.
 Where appropriate, use **bullet points** to list key information, steps, or components described in the document.
 Ensure the summary is comprehensive and captures the main arguments, findings, and conclusions.
+
+{{#if summaryLength}}
+Please make the main summary '{{summaryLength}}' in length.
+{{else}}
+Please make the main summary 'medium' in length (provide a good balance of detail and conciseness).
+{{/if}}
+
+{{#if summaryFocus}}
+Pay special attention to and emphasize "{{summaryFocus}}" in your summary.
+{{/if}}
 
 Document:
 {{{documentText}}}
 
-Additionally, if the document is sufficiently long (more than 500 words), provide a section-by-section summary of the document as well, also using detailed explanations and bullet points where suitable.
+Additionally, if the document is sufficiently long (more than 500 words or multiple distinct sections), provide a section-by-section summary of the document as well, also using detailed explanations and bullet points where suitable.
 `,
 });
 
