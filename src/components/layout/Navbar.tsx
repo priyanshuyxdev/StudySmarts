@@ -50,6 +50,9 @@ export default function Navbar() {
       setAuthRole(role);
       setIsAuthModalOpen(true);
     }
+    // If already logged in as the correct role and trying to click the link,
+    // Next.js Link component will handle navigation if it's a Link.
+    // If it's a button for a role not yet logged into, it opens the modal.
   };
 
   const isHomeActive = pathname === '/';
@@ -57,10 +60,9 @@ export default function Navbar() {
   // Teacher is active on '/' if logged in as teacher
   const isTeacherActive = pathname === '/' && currentUser?.role === 'teacher';
 
-
-  const navLinkClasses = "transition-all duration-200 ease-in-out text-sm sm:text-base px-2 sm:px-3";
-  const inactiveNavLinkHoverClasses = "hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/10 dark:hover:text-primary";
-  const activeNavLinkClasses = "shadow-sm";
+  const baseNavButtonClasses = "transition-all duration-200 ease-in-out text-sm sm:text-base px-2 sm:px-3 rounded-none"; // rounded-none to prevent button's default rounding interfering with border
+  const activeNavButtonClasses = "border-b-2 border-primary text-primary font-semibold";
+  const inactiveNavButtonHoverClasses = "text-foreground hover:border-b-2 hover:border-primary/70 hover:text-primary/80";
 
 
   return (
@@ -75,10 +77,10 @@ export default function Navbar() {
           <div className="space-x-1 sm:space-x-2 flex items-center">
             <Link href="/" passHref>
               <Button 
-                variant={isHomeActive && !isTeacherActive ? "secondary" : "ghost"} 
+                variant="ghost"
                 className={cn(
-                  navLinkClasses,
-                  isHomeActive && !isTeacherActive ? activeNavLinkClasses : inactiveNavLinkHoverClasses
+                  baseNavButtonClasses,
+                  isHomeActive && !isTeacherActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                 )}
               >
                 <Home className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Home
@@ -88,10 +90,10 @@ export default function Navbar() {
             {currentUser?.role === 'student' ? (
                  <Link href="/student" passHref>
                     <Button 
-                      variant={isStudentActive ? "secondary" : "ghost"} 
+                      variant="ghost"
                       className={cn(
-                        navLinkClasses,
-                        isStudentActive ? activeNavLinkClasses : inactiveNavLinkHoverClasses
+                        baseNavButtonClasses,
+                        isStudentActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                       )}
                     >
                         <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
@@ -101,19 +103,20 @@ export default function Navbar() {
                 <Button 
                   variant={"ghost"} 
                   onClick={() => handleAuthLinkClick('student')} 
-                  className={cn(navLinkClasses, inactiveNavLinkHoverClasses)}
+                  className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses)}
                 >
                     <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
                 </Button>
             )}
 
             {currentUser?.role === 'teacher' ? (
+                 // Teacher link points to home, active state depends on being on home + teacher role
                  <Link href="/" passHref> 
                     <Button 
-                      variant={isTeacherActive ? "secondary" : "ghost"} 
+                      variant="ghost"
                       className={cn(
-                        navLinkClasses,
-                        isTeacherActive ? activeNavLinkClasses : inactiveNavLinkHoverClasses
+                        baseNavButtonClasses,
+                        isTeacherActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                       )}
                     >
                         <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
@@ -123,7 +126,7 @@ export default function Navbar() {
                 <Button 
                   variant={"ghost"} 
                   onClick={() => handleAuthLinkClick('teacher')} 
-                  className={cn(navLinkClasses, inactiveNavLinkHoverClasses)}
+                  className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses)}
                 >
                     <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
                 </Button>
@@ -134,7 +137,7 @@ export default function Navbar() {
                 variant="outline" 
                 onClick={logoutUser} 
                 size="sm" 
-                className="flex items-center text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out"
+                className="flex items-center text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out rounded-md" // Added rounded-md back
               >
                 <LogOut className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Logout ({currentUser.id})
               </Button>
