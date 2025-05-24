@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -65,21 +66,21 @@ export default function DownloadStudyAidsButton({
       const addWrappedText = (text: string, x: number, currentY: number, options?: any): number => {
         doc.setFontSize(options?.fontSize || 11);
         const lines = doc.splitTextToSize(text, maxLineWidth);
-        // Calculate line height based on current font size. Default line height factor in jsPDF is 1.15
         const lineHeight = doc.getFontSize() * (options?.lineHeightFactor || 1.15) / doc.internal.scaleFactor ;
 
-        if (currentY + (lines.length * lineHeight) > pageHeight - margin) {
+        let spaceNeeded = lines.length * lineHeight + (options?.marginBottom || 0);
+        if (currentY + spaceNeeded > pageHeight - margin) {
           doc.addPage();
           currentY = margin;
         }
         doc.text(lines, x, currentY, options);
-        return currentY + (lines.length * lineHeight) + (options?.marginBottom || 0);
+        return currentY + spaceNeeded;
       };
       
       let pdfTitle = "";
       if (downloadType === 'summary') {
         pdfTitle = `Summary for: ${documentNameToUse.replace(/^Custom Quiz:\s*/i, "")}`;
-      } else { // full
+      } else { 
         pdfTitle = documentNameToUse.startsWith("Custom Quiz: ")
           ? documentNameToUse
           : `Study Aids for: ${documentNameToUse}`;
@@ -87,7 +88,6 @@ export default function DownloadStudyAidsButton({
       yPosition = addWrappedText(pdfTitle, margin, yPosition, { fontSize: 18, marginBottom: 10 });
 
 
-      // Summary Section
       if ((downloadType === 'summary' || downloadType === 'full') && summaryToUse?.summary && !isCustomQuizEffective) {
         yPosition = addWrappedText("SUMMARY", margin, yPosition, { fontSize: 16, marginBottom: 5 });
         yPosition = addWrappedText(summaryToUse.summary, margin, yPosition, { fontSize: 11, marginBottom: 7 });
@@ -98,9 +98,8 @@ export default function DownloadStudyAidsButton({
         }
       }
 
-      // Quiz Section
       if (downloadType === 'full' && quizToUse) {
-        if (yPosition + 25 > pageHeight - margin) { // Check before adding quiz header (added some buffer)
+        if (yPosition + 25 > pageHeight - margin) { 
             doc.addPage();
             yPosition = margin;
         }
@@ -112,9 +111,14 @@ export default function DownloadStudyAidsButton({
           q.options.forEach((opt, oIdx) => {
             yPosition = addWrappedText(`  ${String.fromCharCode(97 + oIdx)}) ${opt}`, margin + 5, yPosition, { fontSize: 11, marginBottom: 1 });
           });
-          yPosition += 2; // Extra space after options
+          yPosition += 2; 
 
-          yPosition = addWrappedText(`Reason for correct answer: ${q.reason}`, margin, yPosition, { fontSize: 11, marginBottom: 8 });
+          // Only include reason if not a student or if student download is explicitly allowed to have reasons (not current case)
+          if (currentUser?.role !== 'student') {
+            yPosition = addWrappedText(`Reason for correct answer: ${q.reason}`, margin, yPosition, { fontSize: 11, marginBottom: 8 });
+          } else {
+             yPosition += 6; // Add some spacing even if reason is omitted for students
+          }
         });
       }
 
@@ -144,8 +148,8 @@ export default function DownloadStudyAidsButton({
 
   if (downloadType === 'summary') {
     buttonLabel = "Download Summary as PDF";
-    isButtonDisabled = !summaryToUse || isCustomQuizEffective; // Disable summary download for custom quizzes or if no summary
-  } else { // 'full'
+    isButtonDisabled = !summaryToUse || isCustomQuizEffective; 
+  } else { 
     buttonLabel = `Download ${isCustomQuizEffective ? "Quiz" : "Summary & Quiz"} as PDF`;
     isButtonDisabled = ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse);
   }
@@ -163,3 +167,5 @@ export default function DownloadStudyAidsButton({
     </Button>
   );
 }
+
+    

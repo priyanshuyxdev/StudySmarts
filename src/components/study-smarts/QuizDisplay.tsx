@@ -121,12 +121,16 @@ export default function QuizDisplay({
   };
 
   const resultsSummary = useMemo(() => {
-    if ((isEditable && !allQuestionsAttempted) || (!isEditable && !isQuizSubmittedByStudent)) return [];
+    // For editable mode (teacher/guest), show results if all attempted
+    // For non-editable mode (student), show results only if quiz is submitted
+    if ( (isEditable && !allQuestionsAttempted) || (!isEditable && !isQuizSubmittedByStudent) ) {
+        return [];
+    }
 
     return quiz.questions.map((q, index) => ({
       questionNumber: index + 1,
       isCorrect: feedback[index]?.isCorrect ?? false,
-      reason: q.reason,
+      reason: q.reason, // Reason is still available for teacher/guest
     }));
   }, [allQuestionsAttempted, quiz.questions, feedback, isEditable, isQuizSubmittedByStudent]);
 
@@ -226,26 +230,37 @@ export default function QuizDisplay({
                     key={oIndex}
                     className={cn(
                       "flex items-center space-x-3 p-2 sm:p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors shadow-sm hover:shadow",
-                      userSelections[qIndex] === option && 
-                        (isEditable ? 
+                       userSelections[qIndex] === option && 
+                        (isEditable ? // Teacher/Guest gets immediate visual feedback
                           (feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "border-red-500 bg-red-50 dark:bg-red-900/30")
-                          : (!isQuizSubmittedByStudent ? "bg-muted" : (feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "border-red-500 bg-red-50 dark:bg-red-900/30"))
+                          : (!isQuizSubmittedByStudent ? "bg-muted" : // Student before submission just sees selection
+                              (feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "border-red-500 bg-red-50 dark:bg-red-900/30") // Student after submission sees correctness
+                            )
                         )
                     )}
                   >
                     <RadioGroupItem value={option} id={`q${qIndex}-option${oIndex}`} className="shrink-0" />
                     <span className="flex-grow text-sm">{option}</span>
+                    {/* Conditional rendering of check/cross based on isEditable */}
                     {isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect && (
                       <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
                     )}
                     {isEditable && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false && (
                       <XCircle className="h-5 w-5 text-red-500 shrink-0" />
                     )}
+                    {/* Students only see check/cross *after* submitting and if feedback for this question exists */}
+                    {!isEditable && isQuizSubmittedByStudent && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect && (
+                         <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+                    )}
+                    {!isEditable && isQuizSubmittedByStudent && userSelections[qIndex] === option && feedback[qIndex]?.isCorrect === false && (
+                         <XCircle className="h-5 w-5 text-red-500 shrink-0" />
+                    )}
                   </Label>
                 ))}
               </RadioGroup>
             </div>
             
+            {/* Immediate feedback alerts only for editable (teacher/guest) mode */}
             {isEditable && feedback[qIndex] && ( 
               <>
                 <Alert 
@@ -303,7 +318,8 @@ export default function QuizDisplay({
                 <TableRow>
                   <TableHead className="w-[60px] sm:w-[90px] py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Q #</TableHead>
                   <TableHead className="py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Status</TableHead>
-                  {(!isEditable && isQuizSubmittedByStudent) && <TableHead className="py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Explanation</TableHead>}
+                  {/* Explanation column only shown if isEditable (teacher/guest) */}
+                  {isEditable && <TableHead className="py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Explanation</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -321,7 +337,8 @@ export default function QuizDisplay({
                         </span>
                       )}
                     </TableCell>
-                     {(!isEditable && isQuizSubmittedByStudent) && (
+                     {/* Explanation cell only shown if isEditable (teacher/guest) */}
+                     {isEditable && (
                         <TableCell className="py-1 px-2 text-xs leading-tight sm:text-sm sm:leading-normal sm:py-2 sm:px-3 text-muted-foreground">
                             {result.reason}
                         </TableCell>
@@ -336,3 +353,5 @@ export default function QuizDisplay({
     </Card>
   );
 }
+
+    
