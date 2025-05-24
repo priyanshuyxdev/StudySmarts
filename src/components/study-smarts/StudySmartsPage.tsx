@@ -4,7 +4,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,14 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useStudyContext } from '@/context/StudyContext';
+import { useStudyContext, type StudentAttempt } from '@/context/StudyContext';
 
 import { summarizeDocument, type SummarizeDocumentOutput, type SummaryLength } from "@/ai/flows/summarize-document";
 import { generateQuiz, type GenerateQuizOutput } from "@/ai/flows/generate-quiz";
@@ -43,6 +51,12 @@ const PDFJS_WORKER_SRC = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsL
 
 export default function StudySmartsPage() {
   const { currentUser, setTeacherQuizData, teacherQuizData, studentAttempts, clearTeacherQuizData } = useStudyContext();
+  
+  // Declare role-based boolean flags immediately after getting currentUser
+  const isTeacherOnline = currentUser?.role === 'teacher';
+  const isStudentOnline = currentUser?.role === 'student';
+  const isGuestOnline = !currentUser;
+
   const [documentName, setDocumentName] = useState<string | null>(null);
   const [documentText, setDocumentText] = useState<string>("");
   const [isFileUploaded, setIsFileUploaded] = useState<boolean>(false);
@@ -67,6 +81,7 @@ export default function StudySmartsPage() {
   const [scrollToQuizSignal, setScrollToQuizSignal] = useState<boolean>(false);
   const quizSectionRef = useRef<HTMLDivElement>(null);
   const flashcardsSectionRef = useRef<HTMLDivElement>(null);
+  const studentAttemptsSectionRef = useRef<HTMLDivElement>(null);
 
 
   const { toast } = useToast();
@@ -76,7 +91,7 @@ export default function StudySmartsPage() {
   }, []);
   
   useEffect(() => {
-    if (currentUser?.role === 'teacher') {
+    if (isTeacherOnline) {
       if (teacherQuizData) {
         setSummary(teacherQuizData.summary);
         setQuiz(teacherQuizData.quiz);
@@ -91,14 +106,49 @@ export default function StudySmartsPage() {
         }
       } else {
          if (!isCustomQuizModeActive && !documentText && !customQuizTopic) {
-            setSummary(null);
-            setQuiz(null);
-            setDocumentName(null);
-            setFlashcards(null);
+            resetAllLocalCreationState();
+        }
+      }
+    } else if (isStudentOnline) {
+      resetAllLocalCreationState();
+    } else { // Guest
+      // If local state is active (e.g., guest was working on something)
+      // and teacherQuizData (from localStorage) gets loaded, teacher data takes precedence if they log in.
+      // If teacher logs out, guest might see the old quiz, so we ensure reset if teacher logs out.
+      if (!teacherQuizData && (summary || quiz || documentName)) {
+        // This condition ensures that if a guest was creating and then a teacher logged out (clearing teacherQuizData),
+        // the guest's view is reset if they were seeing something from a previous teacher session.
+        // However, if the guest themselves was creating, their state should persist unless overwritten by a teacher logging in.
+        // This logic is complex with client-side context. The simplest is to let teacher login overwrite, 
+        // and teacher logout clears. Guest state persists until login.
+      } else if (teacherQuizData && !isTeacherOnline) {
+        // If there's teacher data but user is not teacher (e.g., teacher logged out, now guest)
+        // a guest probably shouldn't see the teacher's active quiz creation UI.
+        // But if teacherQuizData is meant to be the "live quiz" for guests too, this might be different.
+        // For now, we assume guests use their own local state unless teacher logs in.
+        // If teacher data is present AND user is NOT teacher, it means teacher logged out.
+        // We reset if the current local state seems to be from that teacher session.
+        if (documentName === teacherQuizData.documentName) {
+           // resetAllLocalCreationState();
         }
       }
     }
-  }, [currentUser, teacherQuizData]);
+  }, [currentUser, teacherQuizData, isTeacherOnline, isStudentOnline]);
+
+
+  const resetAllLocalCreationState = () => {
+    setDocumentName(null);
+    setDocumentText("");
+    setIsFileUploaded(false);
+    setSummary(null);
+    setQuiz(null);
+    setFlashcards(null);
+    setCustomQuizTopic("");
+    setIsCustomQuizModeActive(false); // Ensure this is reset
+    setSummaryLength('medium');
+    setSummaryFocus('');
+    setError(null);
+  };
 
 
   useEffect(() => {
@@ -113,6 +163,12 @@ export default function StudySmartsPage() {
         flashcardsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [flashcards]);
+  
+  useEffect(() => {
+    if (studentAttemptsSectionRef.current && isTeacherOnline && teacherQuizData && studentAttempts.length > 0) {
+        studentAttemptsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [studentAttempts, teacherQuizData, isTeacherOnline]); 
 
 
   const resetDocumentState = () => {
@@ -123,9 +179,11 @@ export default function StudySmartsPage() {
     setFlashcards(null);
     setSummaryLength('medium');
     setSummaryFocus('');
-    if (!(currentUser?.role === 'teacher' && teacherQuizData) && !isCustomQuizModeActive) {
-        setSummary(null);
-        setQuiz(null);
+    if (!isTeacherOnline || !teacherQuizData) { // Don't clear if teacher has an active quiz, unless explicitly cleared
+      if (!isCustomQuizModeActive) { // If switching from custom quiz to doc, custom quiz state is already handled.
+          setSummary(null);
+          setQuiz(null);
+      }
     }
   }
 
@@ -149,7 +207,9 @@ export default function StudySmartsPage() {
       setCustomQuizTopic("");
       setError(null);
       setFlashcards(null);
-      if (!(currentUser?.role === 'teacher' && teacherQuizData)) {
+      // If teacher has an active quiz, don't clear it when switching modes
+      // unless they are actively generating something new.
+      if (!isTeacherOnline || !teacherQuizData) {
         setSummary(null);
         setQuiz(null);
       }
@@ -178,7 +238,7 @@ export default function StudySmartsPage() {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             const pageText = textContent.items.map((item: any) => item.str).join(" ");
-            fullText += pageText + "\\n"; // Using \\n to signify page breaks, though it's treated as space in text.
+            fullText += pageText + "\\n"; 
           }
           setDocumentText(fullText.trim());
           toast({ title: "PDF Processed", description: `Text extracted from "${file.name}".` });
@@ -244,7 +304,7 @@ export default function StudySmartsPage() {
         setScrollToQuizSignal(true);
         toast({ title: "Quiz Generated" });
 
-        if (currentUser?.role === 'teacher') {
+        if (isTeacherOnline) {
           setTeacherQuizData({ summary: summaryResult, quiz: quizResult, documentName: currentDocName });
         }
       } catch (quizError: any)
@@ -296,7 +356,7 @@ export default function StudySmartsPage() {
       setScrollToQuizSignal(true);
       toast({ title: "Custom Quiz Generated", description: `Quiz for "${customQuizTopic}" is ready.` });
 
-      if (currentUser?.role === 'teacher') {
+      if (isTeacherOnline) {
          setTeacherQuizData({ summary: placeholderSummary, quiz: customQuizResult, documentName: tempDocName });
       }
 
@@ -330,30 +390,23 @@ export default function StudySmartsPage() {
 
 
   const handleClearActiveQuiz = () => {
-    if (currentUser?.role === 'teacher') {
-        clearTeacherQuizData();
-        setSummary(null);
-        setQuiz(null);
-        setFlashcards(null);
-        setDocumentName(null);
-        setIsCustomQuizModeActive(false); 
-        setCustomQuizTopic("");
-        setDocumentText("");
-        setIsFileUploaded(false);
+    if (isTeacherOnline) {
+        clearTeacherQuizData(); 
+        resetAllLocalCreationState(); // Resets local UI for the teacher
         toast({ title: "Active Quiz Cleared", description: "No quiz is currently active for students." });
     }
   };
 
   const handleSummaryChange = (newSummary: SummarizeDocumentOutput) => {
     setSummary(newSummary); 
-    if (currentUser?.role === 'teacher' && quiz && documentName) { 
+    if (isTeacherOnline && quiz && documentName) { 
         setTeacherQuizData({summary: newSummary, quiz, documentName});
     }
   };
 
   const handleQuizChange = (newQuiz: GenerateQuizOutput) => {
     setQuiz(newQuiz); 
-     if (currentUser?.role === 'teacher' && summary && documentName) { 
+     if (isTeacherOnline && summary && documentName) { 
         setTeacherQuizData({summary, quiz: newQuiz, documentName});
     }
   };
@@ -367,9 +420,9 @@ export default function StudySmartsPage() {
     return 0;
   }
 
-  const effectiveSummary = currentUser?.role === 'teacher' && teacherQuizData ? teacherQuizData.summary : summary;
-  const effectiveQuiz = currentUser?.role === 'teacher' && teacherQuizData ? teacherQuizData.quiz : quiz;
-  const effectiveDocumentName = currentUser?.role === 'teacher' && teacherQuizData 
+  const effectiveSummary = (isTeacherOnline && teacherQuizData) ? teacherQuizData.summary : summary;
+  const effectiveQuiz = (isTeacherOnline && teacherQuizData) ? teacherQuizData.quiz : quiz;
+  const effectiveDocumentName = (isTeacherOnline && teacherQuizData) 
       ? teacherQuizData.documentName 
       : isCustomQuizModeActive && customQuizTopic 
           ? `Custom Quiz: ${customQuizTopic}` 
@@ -377,22 +430,26 @@ export default function StudySmartsPage() {
   
   const effectiveIsCustomQuizMode = effectiveDocumentName?.toLowerCase().startsWith("custom quiz:") ?? isCustomQuizModeActive;
 
-  const isTeacherOnline = currentUser?.role === 'teacher';
-  const isStudentOnline = currentUser?.role === 'student';
-  const isGuestOnline = !currentUser;
 
+  const filteredStudentAttempts = (isTeacherOnline && teacherQuizData) 
+    ? studentAttempts.filter(attempt => attempt.quizName === teacherQuizData.documentName)
+    : [];
+
+  // Conditional rendering for Student role
   if (isStudentOnline) { 
     return (
         <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto">
-            <Card className="shadow-lg">
-                <CardHeader>
-                    <CardTitle className="flex items-center"><UserCircle className="mr-2 h-6 w-6 text-primary" /> Student Portal Access</CardTitle>
-                    <CardDescription>
+            <Card className="shadow-xl rounded-xl">
+                <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6 rounded-t-xl">
+                    <CardTitle className="flex items-center text-lg sm:text-xl">
+                        <UserCircle className="mr-2 h-7 w-7 text-primary" /> Student Portal Access
+                    </CardTitle>
+                    <CardDescription className="text-sm">
                         Welcome, {currentUser.id}! If not redirected, please use the "Student" link in the navbar to access your quiz.
                     </CardDescription>
                 </CardHeader>
-                 <CardContent>
-                    <p>Your assigned quiz is available on the Student page.</p>
+                 <CardContent className="p-5 sm:p-6">
+                    <p className="text-muted-foreground">Your assigned quiz is available on the Student page. Please navigate there to take it.</p>
                 </CardContent>
             </Card>
              <footer className="w-full text-center p-4 mt-12">
@@ -415,8 +472,8 @@ export default function StudySmartsPage() {
                 <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
                     {teacherQuizData 
-                        ? <>Currently active quiz for students: <strong className="text-foreground">"{teacherQuizData.documentName}"</strong>. Any new quiz you generate will replace this.</>
-                        : 'Generate a quiz from a document or topic to make it available for students.'}
+                        ? <>Currently active quiz for students: <strong className="text-foreground">"{teacherQuizData.documentName}"</strong>. New aids generated will replace this for students.</>
+                        : 'Generate study aids from a document or custom topic to make them available for students.'}
                 </AlertDescription>
                  {teacherQuizData && (
                     <Button onClick={handleClearActiveQuiz} variant="destructive" size="sm" className="mt-3 shadow-md hover:shadow-lg">
@@ -449,7 +506,7 @@ export default function StudySmartsPage() {
                     setCustomQuizTopic(e.target.value);
                     if (e.target.value.trim() !== "") {
                         prepareForCustomQuizGeneration();
-                    } else if (isCustomQuizModeActive && !effectiveQuiz) { 
+                    } else if (isCustomQuizModeActive && !effectiveQuiz && !documentText) { // Only switch off if truly empty
                         setIsCustomQuizModeActive(false); 
                     }
                   }}
@@ -639,7 +696,7 @@ export default function StudySmartsPage() {
         )}
         
         <div ref={quizSectionRef}>
-            {effectiveSummary && !isLoadingSummary && (!isCustomQuizModeActive || effectiveIsCustomQuizMode) && (
+            {effectiveSummary && !isLoadingSummary && (!isCustomQuizModeActive || effectiveIsCustomQuizMode) && (isTeacherOnline || isGuestOnline) && (
               <>
                 <SummaryDisplay 
                   summary={effectiveSummary} 
@@ -703,13 +760,16 @@ export default function StudySmartsPage() {
             downloadType="full"
           />
         )}
+
         <ChatBot />
         <TimerClockDialog />
       </main>
-      <footer className="w-full max-w-4xl mt-12 text-center p-4">
+      <footer className="w-full text-center p-4 mt-12">
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>
     </div>
   );
 }
+
+    

@@ -7,8 +7,9 @@ import type { SummarizeDocumentOutput } from '@/ai/flows/summarize-document';
 import type { GenerateQuizOutput } from '@/ai/flows/generate-quiz';
 import { useToast } from "@/hooks/use-toast";
 
-const TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY = "teacherQuizData";
-const STUDENT_ATTEMPTS_LOCALSTORAGE_KEY = "studentAttempts"; // For potential future use
+const TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY = "teacherQuizData_v2"; // Updated key if schema changes
+const STUDENT_ATTEMPTS_LOCALSTORAGE_KEY = "studentAttempts_v2";
+const CURRENT_USER_LOCALSTORAGE_KEY = "currentUser_v2"; // For persisting logged-in user
 
 interface CurrentUser {
   role: 'student' | 'teacher';
@@ -21,7 +22,7 @@ interface TeacherQuizData {
   documentName: string;
 }
 
-interface StudentAttempt {
+export interface StudentAttempt { // Exporting for use in StudySmartsPage
   studentId: string;
   score: number;
   totalQuestions: number;
@@ -60,58 +61,61 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load teacher quiz data from localStorage on initial mount
+    // Load data from localStorage on initial mount
     try {
+      const storedUser = localStorage.getItem(CURRENT_USER_LOCALSTORAGE_KEY);
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+
       const storedTeacherQuizData = localStorage.getItem(TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY);
       if (storedTeacherQuizData) {
         setTeacherQuizDataState(JSON.parse(storedTeacherQuizData));
       }
-    } catch (error) {
-      console.error("Failed to load teacher quiz data from localStorage:", error);
-      localStorage.removeItem(TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY); // Clear corrupted data
-    }
 
-    // Potential: Load student attempts from localStorage if needed for persistence
-    // try {
-    //   const storedStudentAttempts = localStorage.getItem(STUDENT_ATTEMPTS_LOCALSTORAGE_KEY);
-    //   if (storedStudentAttempts) {
-    //     setStudentAttempts(JSON.parse(storedStudentAttempts));
-    //   }
-    // } catch (error) {
-    //   console.error("Failed to load student attempts from localStorage:", error);
-    //   localStorage.removeItem(STUDENT_ATTEMPTS_LOCALSTORAGE_KEY);
-    // }
+      const storedStudentAttempts = localStorage.getItem(STUDENT_ATTEMPTS_LOCALSTORAGE_KEY);
+      if (storedStudentAttempts) {
+        setStudentAttempts(JSON.parse(storedStudentAttempts));
+      }
+    } catch (error) {
+      console.error("Failed to load data from localStorage:", error);
+      // Clear potentially corrupted data
+      localStorage.removeItem(CURRENT_USER_LOCALSTORAGE_KEY);
+      localStorage.removeItem(TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY);
+      localStorage.removeItem(STUDENT_ATTEMPTS_LOCALSTORAGE_KEY);
+    }
   }, []);
 
 
   const loginUser = useCallback((role: 'student' | 'teacher', idInput: string, passwordInput: string): boolean => {
+    let matchedUser: CurrentUser | null = null;
     if (role === 'teacher') {
-      const matchedTeacher = teacherCredentials.find(
+      const foundTeacher = teacherCredentials.find(
         teacher => teacher.id.toLowerCase() === idInput.toLowerCase() && teacher.password === passwordInput
       );
-      if (matchedTeacher) {
-        setCurrentUser({ role: 'teacher', id: matchedTeacher.id });
-        toast({ title: "Login Successful", description: `Welcome, Teacher ${matchedTeacher.id}!` });
-        return true;
-      }
+      if (foundTeacher) matchedUser = { role: 'teacher', id: foundTeacher.id };
     } else if (role === 'student') {
-      const matchedStudent = studentCredentials.find(
+      const foundStudent = studentCredentials.find(
         student => student.id.toLowerCase() === idInput.toLowerCase() && student.password === passwordInput
       );
-      if (matchedStudent) {
-        setCurrentUser({ role: 'student', id: matchedStudent.id });
-        toast({ title: "Login Successful", description: `Welcome, ${matchedStudent.id}!` });
-        return true;
-      }
+      if (foundStudent) matchedUser = { role: 'student', id: foundStudent.id };
     }
+
+    if (matchedUser) {
+      setCurrentUser(matchedUser);
+      localStorage.setItem(CURRENT_USER_LOCALSTORAGE_KEY, JSON.stringify(matchedUser));
+      toast({ title: "Login Successful", description: `Welcome, ${matchedUser.role === 'teacher' ? 'Teacher ' : ''}${matchedUser.id}!` });
+      return true;
+    }
+    
     toast({ variant: "destructive", title: "Login Failed", description: "Invalid ID or password." });
     return false;
   }, [toast]);
 
   const logoutUser = useCallback(() => {
     setCurrentUser(null);
-    // Note: We don't clear teacherQuizData on logout, teacher might log back in to the same session.
-    // Student attempts also persist in memory for the session.
+    localStorage.removeItem(CURRENT_USER_LOCALSTORAGE_KEY);
+    // teacherQuizData and studentAttempts remain in localStorage for persistence across logins
     toast({ title: "Logged Out", description: "You have been successfully logged out." });
   }, [toast]);
 
@@ -119,23 +123,21 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setTeacherQuizDataState(data);
     try {
       localStorage.setItem(TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY, JSON.stringify(data));
+      toast({ title: "Quiz Set for Students", description: `Quiz "${data.documentName}" is now active.` });
     } catch (error) {
       console.error("Failed to save teacher quiz data to localStorage:", error);
       toast({ variant: "destructive", title: "Storage Error", description: "Could not save quiz data."});
     }
-    toast({ title: "Quiz Set for Students", description: `Quiz "${data.documentName}" is now active.` });
   }, [toast]);
 
   const clearTeacherQuizData = useCallback(() => {
     setTeacherQuizDataState(null);
     try {
       localStorage.removeItem(TEACHER_QUIZ_DATA_LOCALSTORAGE_KEY);
+      toast({ title: "Active Quiz Cleared", description: "No quiz is currently active for students." });
     } catch (error) {
       console.error("Failed to remove teacher quiz data from localStorage:", error);
     }
-    // Student attempts are not cleared here, they are only filtered in the UI
-    // based on the currently active teacherQuizData.
-    toast({ title: "Active Quiz Cleared", description: "No quiz is currently active for students." });
   }, [toast]);
 
 
@@ -143,15 +145,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     setStudentAttempts(prevAttempts => {
       const newAttempt = { ...attempt, timestamp: Date.now() };
       const updatedAttempts = [...prevAttempts, newAttempt];
-      // Potential: Save student attempts to localStorage if needed for persistence
-      // try {
-      //   localStorage.setItem(STUDENT_ATTEMPTS_LOCALSTORAGE_KEY, JSON.stringify(updatedAttempts));
-      // } catch (error) {
-      //   console.error("Failed to save student attempts to localStorage:", error);
-      // }
+      try {
+        localStorage.setItem(STUDENT_ATTEMPTS_LOCALSTORAGE_KEY, JSON.stringify(updatedAttempts));
+      } catch (error) {
+        console.error("Failed to save student attempts to localStorage:", error);
+        toast({ variant: "destructive", title: "Storage Error", description: "Could not save your attempt." });
+      }
       return updatedAttempts;
     });
-    toast({ title: "Quiz Submitted", description: `Your score: ${attempt.score}/${attempt.totalQuestions}` });
+    // Toast for student submission is now in QuizDisplay
   }, [toast]);
 
   return (
