@@ -21,16 +21,12 @@ export type GenerateCustomQuizInput = z.infer<typeof GenerateCustomQuizInputSche
 // Output schema is the same as the standard quiz generation
 export type { GenerateQuizOutput as GenerateCustomQuizOutput };
 
-export async function generateCustomQuiz(input: GenerateCustomQuizInput): Promise<GenerateCustomQuizOutput> {
-  return generateCustomQuizFlow(input);
-}
-
 const GenerateCustomQuizOutputSchemaFromOriginal = z.object({ // Re-using the structure from GenerateQuizOutputSchema
     questions: z
       .array(
         z.object({
           question: z.string().describe('The question text.'),
-          options: z.array(z.string()).length(4).describe('The multiple-choice options (exactly 4).'),
+          options: z.array(z.string()).describe('The multiple-choice options (ideally 4, as requested in prompt).'), // Removed .length(4)
           answer: z.string().describe('The correct answer (must be one of the options).'),
           reason: z.string().describe('A detailed and comprehensive explanation of why the answer is correct, clarifying the concept.'),
         })
@@ -79,3 +75,7 @@ const generateCustomQuizFlow = ai.defineFlow(
     return output!;
   }
 );
+
+export async function generateCustomQuiz(input: GenerateCustomQuizInput): Promise<GenerateCustomQuizOutput> {
+  return generateCustomQuizFlow(input);
+}
