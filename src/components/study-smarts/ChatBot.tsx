@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -25,14 +25,13 @@ export default function ChatBot() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Scroll to bottom when new messages are added or loading state changes
     if (scrollAreaRef.current) {
       const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (scrollViewport) {
         scrollViewport.scrollTop = scrollViewport.scrollHeight;
       }
     }
-  }, [messages, isLoading]); // Added isLoading to scroll effect dependency
+  }, [messages, isLoading]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -74,13 +73,52 @@ export default function ChatBot() {
   
   const handleOpen = () => {
     setIsOpen(true);
-    // Add an initial greeting message from the bot when chat opens for the first time in session
     if (messages.length === 0) {
       setMessages([
         { id: 'initial-greeting', text: "Hello! I'm StudySmarts AI. How can I help you today?", sender: 'bot' }
       ]);
     }
   }
+
+  const renderMessageContent = (text: string) => {
+    // Check if the message likely contains a code block
+    if (!text.includes("```")) {
+      // Original rendering for non-code messages, splitting by actual newline characters
+      return text.split('\n').map((line, idx) => (
+        <React.Fragment key={idx}>
+          {line}
+          {idx < text.split('\n').length - 1 && <br />}
+        </React.Fragment>
+      ));
+    }
+
+    const parts = text.split("```");
+    return parts.map((part, index) => {
+      if (index % 2 === 1) { // This is a code block part
+        const lines = part.split('\n');
+        const language = lines[0].trim(); // e.g., "cpp" or empty if no language specified
+        const codeContent = lines.slice(1).join('\n').trim(); // The actual code
+
+        return (
+          <pre
+            key={index}
+            className="font-mono bg-muted/70 dark:bg-muted/50 text-foreground p-3 my-2 rounded-md block whitespace-pre-wrap overflow-x-auto text-sm"
+          >
+            {language && <div className="text-xs text-muted-foreground/80 mb-1 capitalize">{language}</div>}
+            <code>{codeContent}</code>
+          </pre>
+        );
+      } else { // This is a normal text part
+        // Render normal text, respecting its internal newlines
+        return part.split('\n').map((line, lineIdx) => (
+           <React.Fragment key={`${index}-${lineIdx}`}>
+             {line}
+             {lineIdx < part.split('\n').length - 1 && <br />}
+           </React.Fragment>
+        ));
+      }
+    });
+  };
 
 
   return (
@@ -120,31 +158,26 @@ export default function ChatBot() {
                   }`}
                 >
                   {message.sender === 'bot' && (
-                    <Bot className="h-6 w-6 text-primary flex-shrink-0" />
+                    <Bot className="h-6 w-6 text-primary flex-shrink-0 self-start mt-1" />
                   )}
                   <div
-                    className={`max-w-[70%] rounded-lg px-3 py-2 text-sm ${
+                    className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                       message.sender === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    {message.text.split('\\n').map((line, index) => (
-                        <span key={index}>
-                        {line}
-                        <br />
-                        </span>
-                    ))}
+                    {renderMessageContent(message.text)}
                   </div>
                   {message.sender === 'user' && (
-                    <User className="h-6 w-6 text-secondary-foreground flex-shrink-0" />
+                    <User className="h-6 w-6 text-secondary-foreground flex-shrink-0 self-start mt-1" />
                   )}
                 </div>
               ))}
               {isLoading && (
                 <div className="flex items-center space-x-2">
                   <Bot className="h-6 w-6 text-primary" />
-                  <div className="max-w-[70%] rounded-lg px-3 py-2 text-sm bg-muted text-muted-foreground">
+                  <div className="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-muted text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Typing...
                   </div>
                 </div>
