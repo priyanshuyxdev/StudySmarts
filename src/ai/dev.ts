@@ -7,4 +7,5 @@ import '@/ai/flows/generate-quiz.ts';
 import '@/ai/flows/generate-quiz-hint.ts'; // Added new hint flow
 import '@/ai/flows/generate-custom-quiz.ts'; // Added new custom quiz flow
 import '@/ai/flows/generate-flashcards.ts'; // Added new flashcard flow
+import '@/ai/flows/chat-flow.ts'; // Added new chat flow
 

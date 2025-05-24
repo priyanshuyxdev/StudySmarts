@@ -33,6 +33,7 @@ import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
 import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
 import FlashcardViewer from "./FlashcardViewer";
+import ChatBot from "./ChatBot"; // Added ChatBot import
 
 
 import * as pdfjsLib from 'pdfjs-dist';
@@ -398,6 +399,7 @@ export default function StudySmartsPage() {
                 <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
             </footer>
+            <ChatBot /> {/* Added ChatBot */}
         </main>
     )
   }
@@ -698,6 +700,7 @@ export default function StudySmartsPage() {
             downloadType="full"
           />
         )}
+        <ChatBot /> {/* Added ChatBot */}
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center p-4">
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik &amp; Tushar</p>
@@ -706,4 +709,3 @@ export default function StudySmartsPage() {
     </div>
   );
 }
-
