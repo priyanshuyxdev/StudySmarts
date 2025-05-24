@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, User, Briefcase, LogOut, BookOpenCheck, Sun, Moon, Clock } from 'lucide-react';
+import { Home, User, Briefcase, LogOut, BookOpenCheck, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/auth/AuthModal';
 import { useStudyContext } from '@/context/StudyContext';
@@ -16,7 +16,6 @@ export default function Navbar() {
   const { currentUser, logoutUser } = useStudyContext();
   const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [currentTime, setCurrentTime] = useState<string | null>(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -27,18 +26,6 @@ export default function Navbar() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-
-    // Clock effect
-    const timerId = setInterval(() => {
-      setCurrentTime(new Date().toLocaleTimeString());
-    }, 1000);
-
-    // Set initial time after mount to avoid hydration mismatch
-    setCurrentTime(new Date().toLocaleTimeString());
-
-    return () => {
-      clearInterval(timerId);
-    };
   }, []);
 
   const toggleTheme = () => {
@@ -89,7 +76,7 @@ export default function Navbar() {
                 variant="ghost"
                 className={cn(
                   baseNavButtonClasses,
-                  isHomeActive && !isTeacherActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
+                  isHomeActive && !isTeacherActive && !isStudentActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                 )}
               >
                 <Home className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Home
@@ -112,7 +99,7 @@ export default function Navbar() {
                 <Button 
                   variant={"ghost"} 
                   onClick={() => handleAuthLinkClick('student')} 
-                  className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses)}
+                  className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses, isStudentActive ? activeNavButtonClasses : "")}
                 >
                     <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
                 </Button>
@@ -134,7 +121,7 @@ export default function Navbar() {
                 <Button 
                   variant={"ghost"} 
                   onClick={() => handleAuthLinkClick('teacher')} 
-                  className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses)}
+                  className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses, isTeacherActive ? activeNavButtonClasses : "")}
                 >
                     <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
                 </Button>
@@ -150,12 +137,6 @@ export default function Navbar() {
                 >
                   <LogOut className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Logout ({currentUser.id})
                 </Button>
-              )}
-              {currentTime && (
-                <div className="flex items-center text-xs sm:text-sm text-muted-foreground font-medium p-1.5 rounded-md bg-muted/50 shadow-sm">
-                  <Clock className="mr-1.5 h-4 w-4 text-primary" />
-                  {currentTime}
-                </div>
               )}
               <Button 
                 onClick={toggleTheme} 

@@ -4,7 +4,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,7 @@ import QuizDisplay from "./QuizDisplay";
 import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
 import FlashcardViewer from "./FlashcardViewer";
 import ChatBot from "./ChatBot";
+import TimerClockDialog from "./TimerClockDialog";
 
 
 import * as pdfjsLib from 'pdfjs-dist';
@@ -177,7 +178,7 @@ export default function StudySmartsPage() {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
             const pageText = textContent.items.map((item: any) => item.str).join(" ");
-            fullText += pageText + "\\n";
+            fullText += pageText + "\\n"; // Using \\n to signify page breaks, though it's treated as space in text.
           }
           setDocumentText(fullText.trim());
           toast({ title: "PDF Processed", description: `Text extracted from "${file.name}".` });
@@ -399,43 +400,44 @@ export default function StudySmartsPage() {
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
             </footer>
             <ChatBot />
+            <TimerClockDialog />
         </main>
     )
   }
 
 
   return (
-    <div className="min-h-[calc(100vh-var(--navbar-height,60px))] flex flex-col items-center">
+    <div className="min-h-[calc(100vh-var(--navbar-height,60px))] flex flex-col items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
       <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
         { isTeacherOnline && (
-             <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-md">
+             <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-xl rounded-lg">
                 <Briefcase className="mr-2 h-5 w-5 text-primary" />
                 <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
                     {teacherQuizData 
-                        ? <>Currently active quiz for students: <strong>"{teacherQuizData.documentName}"</strong>. Any new quiz you generate will replace this.</>
+                        ? <>Currently active quiz for students: <strong className="text-foreground">"{teacherQuizData.documentName}"</strong>. Any new quiz you generate will replace this.</>
                         : 'Generate a quiz from a document or topic to make it available for students.'}
                 </AlertDescription>
                  {teacherQuizData && (
-                    <Button onClick={handleClearActiveQuiz} variant="destructive" size="sm" className="mt-3">
+                    <Button onClick={handleClearActiveQuiz} variant="destructive" size="sm" className="mt-3 shadow-md hover:shadow-lg">
                         <Trash2 className="mr-2 h-4 w-4" /> Clear Active Quiz for Students
                     </Button>
                  )}
             </Alert>
         )}
 
-        <Card className="shadow-lg border border-purple-300 dark:border-purple-700">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Wand2 className="mr-2 h-6 w-6 text-purple-500" />
+        <Card className="shadow-xl border-2 border-purple-300 dark:border-purple-700/80 rounded-xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 p-5 sm:p-6">
+            <CardTitle className="flex items-center text-lg sm:text-xl">
+              <Wand2 className="mr-2 h-6 w-6 text-purple-600 dark:text-purple-400" />
               1. Create Custom Quiz by Topic
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Enter a topic or phrase to generate a quiz.
               {isTeacherOnline && " This quiz will be set for students if generated."}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 sm:p-6">
             <form onSubmit={handleGenerateCustomQuiz} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="custom-topic" className="text-sm font-medium">Enter Topic/Phrase</Label>
@@ -451,7 +453,7 @@ export default function StudySmartsPage() {
                         setIsCustomQuizModeActive(false); 
                     }
                   }}
-                  className="border-input focus:ring-purple-500"
+                  className="border-input focus:ring-purple-500 shadow-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -467,14 +469,14 @@ export default function StudySmartsPage() {
                   {[5, 10, 15, 20].map(num => (
                     <div key={num} className="flex items-center space-x-2">
                       <RadioGroupItem value={String(num)} id={`num-${num}`} />
-                      <Label htmlFor={`num-${num}`} className="cursor-pointer">{num}</Label>
+                      <Label htmlFor={`num-${num}`} className="cursor-pointer text-sm">{num}</Label>
                     </div>
                   ))}
                 </RadioGroup>
               </div>
               <Button 
                 type="submit" 
-                className="w-full text-white font-semibold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
+                className="w-full text-base font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
                 disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary || isLoadingFlashcards || customQuizTopic.trim() === ""}
               >
                 {isLoadingQuiz && isCustomQuizModeActive ? ( 
@@ -488,22 +490,24 @@ export default function StudySmartsPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <UploadCloud className="mr-2 h-6 w-6 text-primary" />
+        <Card className="shadow-xl border-2 border-sky-300 dark:border-sky-700/80 rounded-xl overflow-hidden">
+           <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6">
+            <CardTitle className="flex items-center text-lg sm:text-xl">
+              <UploadCloud className="mr-2 h-6 w-6 text-sky-600 dark:text-sky-400" />
               2. Process Document
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Alternatively, upload a PDF/text file for summary and quiz generation.
               {isTeacherOnline && " This quiz will be set for students if generated."}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-5 sm:p-6">
             <form onSubmit={handleGenerateDocumentAids} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="file-upload" className="text-sm font-medium">Select File (PDF or .txt, .md)</Label>
-                <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} className="file:text-primary file:font-semibold"/>
+                <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} 
+                  className="file:text-primary file:font-semibold file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 hover:file:bg-primary/20 transition-colors cursor-pointer shadow-sm"
+                />
                 {isFileUploaded && !isCustomQuizModeActive && documentName && ( 
                   <p className="text-sm text-muted-foreground flex items-center mt-1">
                     <FileText size={16} className="mr-1" /> Selected: {documentName}
@@ -524,7 +528,7 @@ export default function StudySmartsPage() {
                   }}
                   disabled={isCustomQuizModeActive && !documentText}
                   >
-                    <SelectTrigger id="summary-length" className="w-full">
+                    <SelectTrigger id="summary-length" className="w-full shadow-sm">
                       <SelectValue placeholder="Select length" />
                     </SelectTrigger>
                     <SelectContent>
@@ -547,7 +551,7 @@ export default function StudySmartsPage() {
                       setSummaryFocus(e.target.value);
                       if (documentText.trim() !== "" && isCustomQuizModeActive) prepareForDocumentProcessing();
                     }}
-                    className="border-input"
+                    className="border-input shadow-sm"
                     disabled={isCustomQuizModeActive && !documentText}
                   />
                 </div>
@@ -576,12 +580,12 @@ export default function StudySmartsPage() {
                     }
                   }}
                   rows={8}
-                  className="border-input focus:ring-primary"
+                  className="border-input focus:ring-primary shadow-sm"
                   readOnly={isPdfProcessing && !isCustomQuizModeActive} 
                   disabled={isCustomQuizModeActive && !documentText} 
                 />
                  {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && documentText && !error && !isCustomQuizModeActive && (
-                    <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700 shadow-sm">
+                    <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700 shadow-sm rounded-md">
                         <Info className="h-4 w-4 text-green-700 dark:text-green-400" />
                         <AlertTitle className="text-green-700 dark:text-green-400">PDF Ready</AlertTitle>
                         <AlertDescription className="text-green-700 dark:text-green-400">
@@ -590,7 +594,7 @@ export default function StudySmartsPage() {
                     </Alert>
                 )}
                  {isFileUploaded && isPdfProcessing && !isCustomQuizModeActive && (
-                    <Alert variant="default" className="mt-2 shadow-sm">
+                    <Alert variant="default" className="mt-2 shadow-sm rounded-md">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <AlertTitle>PDF Processing</AlertTitle>
                         <AlertDescription>Extracting text from PDF...</AlertDescription>
@@ -599,7 +603,7 @@ export default function StudySmartsPage() {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-base font-semibold py-3 rounded-lg"
                 disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizModeActive || isLoadingFlashcards || (documentText.trim() === "" && !isPdfProcessing)}
               >
                 {(isLoadingSummary || (isLoadingQuiz && !isCustomQuizModeActive && !isPdfProcessing && !isCustomQuizModeActive)) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -610,7 +614,7 @@ export default function StudySmartsPage() {
         </Card>
         
         {error && (
-          <Alert variant="destructive" className="my-4 shadow-md">
+          <Alert variant="destructive" className="my-4 shadow-md rounded-lg">
               <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
@@ -618,13 +622,13 @@ export default function StudySmartsPage() {
         )}
 
         {(isLoadingSummary || isLoadingQuiz || (isPdfProcessing && !isCustomQuizModeActive) || isLoadingFlashcards) && (
-          <Card className="shadow-lg mt-6">
+          <Card className="shadow-lg mt-6 rounded-xl">
             <CardHeader>
               <CardTitle>Processing...</CardTitle>
             </CardHeader>
             <CardContent>
               <Progress value={totalLoadingProgress()} className="w-full" />
-              <p className="text-center text-muted-foreground mt-2">
+              <p className="text-center text-muted-foreground mt-2 text-sm">
                 {isPdfProcessing && !isCustomQuizModeActive ? "Extracting text from PDF..." : ""}
                 {isLoadingSummary && !summary && !isCustomQuizModeActive ? " Generating summary..." : ""}
                 {isLoadingFlashcards && !flashcards && !isCustomQuizModeActive ? " Generating flashcards..." : ""}
@@ -648,7 +652,7 @@ export default function StudySmartsPage() {
                   effectiveSummary && 
                   !effectiveIsCustomQuizMode && 
                   !isLoadingSummary && (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <DownloadStudyAidsButton 
                         summary={effectiveSummary}
                         quiz={null} 
@@ -658,7 +662,7 @@ export default function StudySmartsPage() {
                     />
                     <Button
                       onClick={handleGenerateFlashcards}
-                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow"
+                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3"
                       disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
                     >
                       {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
@@ -700,6 +704,7 @@ export default function StudySmartsPage() {
           />
         )}
         <ChatBot />
+        <TimerClockDialog />
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center p-4">
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
