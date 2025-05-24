@@ -40,18 +40,18 @@ export default function FlashcardViewer({ flashcards, isLoading }: FlashcardView
   }
 
   if (!flashcards || flashcards.length === 0) {
-    return null; // Or a message saying "No flashcards generated"
+    return null;
   }
 
   const currentCard = flashcards[currentIndex];
 
   const handleNext = () => {
-    setIsFlipped(false); // Show front of next card
+    setIsFlipped(false); 
     setCurrentIndex((prevIndex) => (prevIndex + 1) % flashcards.length);
   };
 
   const handlePrev = () => {
-    setIsFlipped(false); // Show front of previous card
+    setIsFlipped(false); 
     setCurrentIndex((prevIndex) => (prevIndex - 1 + flashcards.length) % flashcards.length);
   };
 
@@ -80,24 +80,22 @@ export default function FlashcardViewer({ flashcards, isLoading }: FlashcardView
             className="transition-transform duration-500 ease-in-out w-full h-full flex items-center justify-center"
             style={{ transformStyle: 'preserve-3d', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
           >
-            {/* Front of Card */}
             <div className="absolute w-full h-full p-4 flex items-center justify-center" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
               <p className="text-xl font-semibold">{currentCard.term}</p>
             </div>
-            {/* Back of Card */}
             <div className="absolute w-full h-full p-4 flex items-center justify-center bg-card" style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
               <p className="text-sm">{currentCard.definition}</p>
             </div>
           </div>
         </div>
         <div className="flex w-full max-w-md justify-between items-center">
-          <Button onClick={handlePrev} variant="outline" size="icon" aria-label="Previous flashcard">
+          <Button onClick={handlePrev} variant="outline" size="icon" aria-label="Previous flashcard" className="shadow-sm hover:shadow transition-shadow">
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <Button onClick={handleFlip} variant="outline" aria-label="Flip flashcard">
+          <Button onClick={handleFlip} variant="outline" aria-label="Flip flashcard" className="shadow-sm hover:shadow transition-shadow">
             <Repeat className="mr-2 h-4 w-4" /> Flip Card
           </Button>
-          <Button onClick={handleNext} variant="outline" size="icon" aria-label="Next flashcard">
+          <Button onClick={handleNext} variant="outline" size="icon" aria-label="Next flashcard" className="shadow-sm hover:shadow transition-shadow">
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>

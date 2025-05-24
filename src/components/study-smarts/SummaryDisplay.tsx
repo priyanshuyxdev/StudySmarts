@@ -13,14 +13,14 @@ interface SummaryDisplayProps {
   summary: SummarizeDocumentOutput;
   onSummaryChange: (newSummary: SummarizeDocumentOutput) => void;
   isLoading: boolean;
-  isEditable?: boolean; // New prop
+  isEditable?: boolean;
 }
 
 export default function SummaryDisplay({ 
   summary, 
   onSummaryChange, 
   isLoading, 
-  isEditable = true // Default to true for teacher/guest
+  isEditable = true 
 }: SummaryDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -69,7 +69,7 @@ export default function SummaryDisplay({
             {isEditable ? "Review and edit the generated summary below." : "Review the generated summary below."}
           </CardDescription>
         </div>
-        <Button onClick={toggleExpand} variant="outline" size="sm">
+        <Button onClick={toggleExpand} variant="outline" size="sm" className="shadow-sm hover:shadow transition-shadow">
           {isExpanded ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
           {isExpanded ? "Collapse" : "Expand"}
         </Button>
@@ -85,7 +85,7 @@ export default function SummaryDisplay({
             value={summary.summary}
             onChange={handleMainSummaryChange}
             rows={isExpanded ? 20 : (isEditable ? 8 : 6)}
-            className="border-input focus:ring-primary"
+            className="border-input focus:ring-primary shadow-sm"
             aria-label="Main summary text area"
             readOnly={!isEditable}
           />
@@ -93,10 +93,12 @@ export default function SummaryDisplay({
 
         {summary.sectionSummaries && (
           <Accordion type="single" collapsible className="w-full" defaultValue={isEditable ? undefined : "section-summaries"}>
-            <AccordionItem value="section-summaries">
-              <AccordionTrigger className="text-sm font-medium flex items-center hover:no-underline">
-                {isEditable && <Edit3 size={16} className="mr-2 text-accent" />}
-                Section-by-Section Summaries {isEditable ? "(Editable)" : ""}
+            <AccordionItem value="section-summaries" className="border-b-0">
+              <AccordionTrigger className="text-sm font-medium flex items-center hover:no-underline py-3 px-1 rounded-md hover:bg-muted/50 transition-colors">
+                <div className="flex items-center">
+                 {isEditable && <Edit3 size={16} className="mr-2 text-accent" />}
+                 Section-by-Section Summaries {isEditable ? "(Editable)" : ""}
+                </div>
               </AccordionTrigger>
               <AccordionContent>
                 <Textarea
@@ -104,7 +106,7 @@ export default function SummaryDisplay({
                   value={summary.sectionSummaries}
                   onChange={handleSectionSummariesChange}
                   rows={isExpanded ? 15 : (isEditable ? 10 : 8)}
-                  className="border-input focus:ring-primary mt-2"
+                  className="border-input focus:ring-primary mt-2 shadow-sm"
                   aria-label="Section summaries text area"
                   readOnly={!isEditable}
                 />

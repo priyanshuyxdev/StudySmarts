@@ -16,15 +16,12 @@ export default function StudentPage() {
 
   useEffect(() => {
     if (currentUser === null) {
-      // If not logged in, redirect to home
       router.push('/');
     } else if (currentUser.role !== 'student') {
-      // If logged in but not as student, redirect to home (or teacher dashboard if we had one)
       router.push('/');
     }
   }, [currentUser, router]);
 
-  // Loading state or if redirection hasn't happened yet
   if (!currentUser || currentUser.role !== 'student') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] p-4">
@@ -34,7 +31,6 @@ export default function StudentPage() {
     );
   }
 
-  // Student is logged in, but no quiz is available
   if (!teacherQuizData) {
     return (
       <main className="w-full max-w-2xl mx-auto space-y-6 p-4 md:p-8 mt-8">
@@ -55,7 +51,7 @@ export default function StudentPage() {
               alt="Relaxing student illustration" 
               className="mx-auto rounded-md shadow-md mb-4" 
             />
-            <Button onClick={() => router.push('/')} className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button onClick={() => router.push('/')} className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow">
               Go to Home Page
             </Button>
           </CardContent>
@@ -64,7 +60,6 @@ export default function StudentPage() {
     );
   }
 
-  // Student is logged in and a quiz is available
   return (
     <main className="w-full max-w-4xl mx-auto space-y-6 p-4 md:p-8 mt-4">
       <Card className="shadow-lg">
@@ -79,30 +74,27 @@ export default function StudentPage() {
         </CardHeader>
       </Card>
 
-      {/* Quiz Display for Students - Not Editable */}
       <div className="mt-6">
         <QuizDisplay
           quiz={teacherQuizData.quiz}
-          onQuizChange={() => {}} // No-op as students can't change quiz structure
-          isLoading={false} // Assuming quiz data is loaded if we reach here
-          documentName={teacherQuizData.documentName} // For quiz title
-          isEditable={false} // CRITICAL: Students cannot edit quiz content
+          onQuizChange={() => {}} 
+          isLoading={false} 
+          documentName={teacherQuizData.documentName} 
+          isEditable={false} 
         />
       </div>
       
-      {/* Download Button for Students */}
       <DownloadStudyAidsButton
-        summary={teacherQuizData.summary} // Pass summary (though students won't see it on page, it's for PDF)
+        summary={teacherQuizData.summary} 
         quiz={teacherQuizData.quiz}
         documentName={teacherQuizData.documentName}
         isCustomQuiz={teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")}
+        downloadType="full"
       />
-       <footer className="w-full text-center p-4 mt-8">
+       <footer className="w-full text-center p-4 mt-12">
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
       </footer>
     </main>
   );
 }
-
-    

@@ -33,7 +33,7 @@ import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
 import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
 import FlashcardViewer from "./FlashcardViewer";
-import ChatBot from "./ChatBot"; // Added ChatBot import
+import ChatBot from "./ChatBot";
 
 
 import * as pdfjsLib from 'pdfjs-dist';
@@ -80,9 +80,7 @@ export default function StudySmartsPage() {
         setSummary(teacherQuizData.summary);
         setQuiz(teacherQuizData.quiz);
         setDocumentName(teacherQuizData.documentName);
-        // Assuming flashcards are not part of teacherQuizData for now
-        // If they were, you'd load them here too.
-        setFlashcards(null); // Reset flashcards if teacher loads a quiz
+        setFlashcards(null); 
         const isTeacherDataCustom = teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:");
         setIsCustomQuizModeActive(isTeacherDataCustom);
         if (isTeacherDataCustom) {
@@ -341,6 +339,7 @@ export default function StudySmartsPage() {
         setCustomQuizTopic("");
         setDocumentText("");
         setIsFileUploaded(false);
+        toast({ title: "Active Quiz Cleared", description: "No quiz is currently active for students." });
     }
   };
 
@@ -395,11 +394,11 @@ export default function StudySmartsPage() {
                     <p>Your assigned quiz is available on the Student page.</p>
                 </CardContent>
             </Card>
-             <footer className="w-full text-center p-4 mt-8">
+             <footer className="w-full text-center p-4 mt-12">
                 <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
             </footer>
-            <ChatBot /> {/* Added ChatBot */}
+            <ChatBot />
         </main>
     )
   }
@@ -409,13 +408,13 @@ export default function StudySmartsPage() {
     <div className="min-h-[calc(100vh-var(--navbar-height,60px))] flex flex-col items-center">
       <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
         { isTeacherOnline && (
-             <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40">
+             <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-md">
                 <Briefcase className="mr-2 h-5 w-5 text-primary" />
                 <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
                     {teacherQuizData 
-                        ? <>Currently active quiz for students: <strong>"{teacherQuizData.documentName}"</strong>. Any new quiz you generate will replace this for students.</>
-                        : 'You are in teacher mode. Generate a quiz from a document or topic to make it available for students.'}
+                        ? <>Currently active quiz for students: <strong>"{teacherQuizData.documentName}"</strong>. Any new quiz you generate will replace this.</>
+                        : 'Generate a quiz from a document or topic to make it available for students.'}
                 </AlertDescription>
                  {teacherQuizData && (
                     <Button onClick={handleClearActiveQuiz} variant="destructive" size="sm" className="mt-3">
@@ -582,7 +581,7 @@ export default function StudySmartsPage() {
                   disabled={isCustomQuizModeActive && !documentText} 
                 />
                  {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && documentText && !error && !isCustomQuizModeActive && (
-                    <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700">
+                    <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700 shadow-sm">
                         <Info className="h-4 w-4 text-green-700 dark:text-green-400" />
                         <AlertTitle className="text-green-700 dark:text-green-400">PDF Ready</AlertTitle>
                         <AlertDescription className="text-green-700 dark:text-green-400">
@@ -591,7 +590,7 @@ export default function StudySmartsPage() {
                     </Alert>
                 )}
                  {isFileUploaded && isPdfProcessing && !isCustomQuizModeActive && (
-                    <Alert variant="default" className="mt-2">
+                    <Alert variant="default" className="mt-2 shadow-sm">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <AlertTitle>PDF Processing</AlertTitle>
                         <AlertDescription>Extracting text from PDF...</AlertDescription>
@@ -600,7 +599,7 @@ export default function StudySmartsPage() {
               </div>
               <Button 
                 type="submit" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
                 disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizModeActive || isLoadingFlashcards || (documentText.trim() === "" && !isPdfProcessing)}
               >
                 {(isLoadingSummary || (isLoadingQuiz && !isCustomQuizModeActive && !isPdfProcessing && !isCustomQuizModeActive)) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -611,7 +610,7 @@ export default function StudySmartsPage() {
         </Card>
         
         {error && (
-          <Alert variant="destructive" className="my-4">
+          <Alert variant="destructive" className="my-4 shadow-md">
               <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
@@ -659,7 +658,7 @@ export default function StudySmartsPage() {
                     />
                     <Button
                       onClick={handleGenerateFlashcards}
-                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow"
                       disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
                     >
                       {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
@@ -700,10 +699,10 @@ export default function StudySmartsPage() {
             downloadType="full"
           />
         )}
-        <ChatBot /> {/* Added ChatBot */}
+        <ChatBot />
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center p-4">
-        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik &amp; Tushar</p>
+        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>
     </div>

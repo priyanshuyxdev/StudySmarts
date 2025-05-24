@@ -139,7 +139,7 @@ export default function QuizDisplay({
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-4 border border-muted rounded animate-pulse">
+              <div key={i} className="p-4 border border-muted rounded animate-pulse shadow-sm">
                 <div className="h-6 w-full bg-muted rounded mb-2"></div>
                 {[...Array(4)].map((_, j) => <div key={j} className="h-4 w-3/4 bg-muted rounded mb-1"></div>)}
               </div>
@@ -165,7 +165,7 @@ export default function QuizDisplay({
             {quizTitle}
         </CardTitle>
         <CardDescription>
-          {isEditable ? "Review and interact with the generated quiz below. You can edit questions." : "Select an answer for each question."}
+          {isEditable ? "Review and interact with the generated quiz below." : "Select an answer for each question."}
           {!isEditable && " Once all questions are answered, a 'Submit Quiz' button will appear."}
         </CardDescription>
       </CardHeader>
@@ -183,7 +183,7 @@ export default function QuizDisplay({
                   size="sm" 
                   onClick={() => handleGetHint(qIndex)}
                   disabled={isLoadingHint[qIndex]}
-                  className="text-xs"
+                  className="text-xs shadow-sm hover:shadow transition-shadow"
                   aria-label={`Get hint for question ${qIndex + 1}`}
                 >
                   {isLoadingHint[qIndex] ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Lightbulb className="mr-1 h-3 w-3" />}
@@ -202,7 +202,7 @@ export default function QuizDisplay({
             />
 
             {isEditable && hints[qIndex] !== undefined && ( 
-              <Alert variant="default" className="mt-3 bg-yellow-50 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700">
+              <Alert variant="default" className="mt-3 bg-yellow-50 border-yellow-300 dark:bg-yellow-900/30 dark:border-yellow-700 shadow-sm">
                 <Lightbulb className="h-4 w-4 text-yellow-700 dark:text-yellow-400" />
                 <AlertTitle className="text-yellow-700 dark:text-yellow-400">Hint</AlertTitle>
                 <AlertDescription className="text-yellow-700 dark:text-yellow-400">
@@ -225,7 +225,7 @@ export default function QuizDisplay({
                     htmlFor={`q${qIndex}-option${oIndex}`} 
                     key={oIndex}
                     className={cn(
-                      "flex items-center space-x-3 p-2 sm:p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors",
+                      "flex items-center space-x-3 p-2 sm:p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors shadow-sm hover:shadow",
                       userSelections[qIndex] === option && 
                         (isEditable ? 
                           (feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "border-red-500 bg-red-50 dark:bg-red-900/30")
@@ -251,7 +251,7 @@ export default function QuizDisplay({
                 <Alert 
                   variant={feedback[qIndex]?.isCorrect ? "default" : "destructive"} 
                   className={cn(
-                    "mt-2",
+                    "mt-2 shadow-sm",
                     feedback[qIndex]?.isCorrect ? "bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700" : "bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-700"
                   )}
                 >
@@ -260,7 +260,7 @@ export default function QuizDisplay({
                     {feedback[qIndex]?.isCorrect ? "Correct!" : "Incorrect."}
                   </AlertTitle>
                 </Alert>
-                <Alert variant="default" className="mt-2 bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700">
+                <Alert variant="default" className="mt-2 bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700 shadow-sm">
                   <Info className="h-4 w-4 text-blue-700 dark:text-blue-400" />
                   <AlertTitle className="text-blue-700 dark:text-blue-400">Explanation</AlertTitle>
                   <AlertDescription className="text-blue-700 dark:text-blue-400">
@@ -278,7 +278,7 @@ export default function QuizDisplay({
         <CardFooter className="flex-col items-center p-6 border-t">
           <Button 
             onClick={handleSubmitQuiz} 
-            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow"
             size="lg"
             aria-label="Submit quiz answers"
           >
@@ -336,7 +336,3 @@ export default function QuizDisplay({
     </Card>
   );
 }
-
-    
-
-    
