@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -32,10 +31,12 @@ export default function TimerClockDialog() {
     const updateClock = () => {
       setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     };
-    updateClock(); // Initial call
-    const clockInterval = setInterval(updateClock, 1000);
-    return () => clearInterval(clockInterval);
-  }, []);
+    if (isOpen) { // Only update clock if dialog is open to save resources
+        updateClock(); // Initial call
+        const clockInterval = setInterval(updateClock, 1000);
+        return () => clearInterval(clockInterval);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isTimerRunning && timeLeft !== null && timeLeft > 0) {
@@ -76,7 +77,7 @@ export default function TimerClockDialog() {
   
   const handleTimerEnd = () => {
     showNotification("StudySmarts Timer", "Time's up! Your study session has ended.");
-    setTimeLeft(null);
+    setTimeLeft(null); // Or set to 0 if you want it to stay at 00:00
   };
 
   const handleSetAndStartTimer = async () => {
@@ -141,14 +142,23 @@ export default function TimerClockDialog() {
         <DialogContent className="sm:max-w-md p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center text-xl">
-              <Clock className="mr-2 h-6 w-6 text-primary" /> Timer & Clock
+              <Clock className="mr-2 h-6 w-6 text-primary" /> Timer &amp; Clock
             </DialogTitle>
             <DialogDescription>
-              Manage your study sessions effectively. Current time: <span className="font-semibold text-foreground">{currentTime}</span>
+              Manage your study sessions effectively.
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 space-y-6">
+            {/* Prominent Clock Display */}
+            <div className="text-center">
+                <p className="text-4xl font-bold tracking-tight text-foreground">
+                    {currentTime || "Loading..."}
+                </p>
+                <p className="text-xs text-muted-foreground">Current Time</p>
+            </div>
+
+
             {/* Timer Display */}
             {timeLeft !== null && (
               <div className="text-center my-4">
@@ -201,7 +211,7 @@ export default function TimerClockDialog() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
               {!isTimerRunning && (
                 <Button onClick={handleSetAndStartTimer} className="w-full bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg">
-                  <Play className="mr-2 h-5 w-5" /> Set & Start Timer
+                  <Play className="mr-2 h-5 w-5" /> Set &amp; Start Timer
                 </Button>
               )}
               {isTimerRunning && (
