@@ -2,7 +2,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'export', // Added for static site generation
+  // output: 'export', // Added for static site generation
   typescript: {
     ignoreBuildErrors: true,
   },
