@@ -1,9 +1,10 @@
+
 // @ts-nocheck
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,10 +26,14 @@ import { useStudyContext } from '@/context/StudyContext';
 import { summarizeDocument, type SummarizeDocumentOutput, type SummaryLength } from "@/ai/flows/summarize-document";
 import { generateQuiz, type GenerateQuizOutput } from "@/ai/flows/generate-quiz";
 import { generateCustomQuiz } from "@/ai/flows/generate-custom-quiz";
+import { generateFlashcards, type GenerateFlashcardsOutput } from "@/ai/flows/generate-flashcards";
+
 
 import SummaryDisplay from "./SummaryDisplay";
 import QuizDisplay from "./QuizDisplay";
 import DownloadStudyAidsButton from "./DownloadStudyAidsButton";
+import FlashcardViewer from "./FlashcardViewer";
+
 
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -43,9 +48,11 @@ export default function StudySmartsPage() {
 
   const [summary, setSummary] = useState<SummarizeDocumentOutput | null>(null);
   const [quiz, setQuiz] = useState<GenerateQuizOutput | null>(null);
+  const [flashcards, setFlashcards] = useState<GenerateFlashcardsOutput['flashcards'] | null>(null);
   
   const [isLoadingSummary, setIsLoadingSummary] = useState<boolean>(false);
   const [isLoadingQuiz, setIsLoadingQuiz] = useState<boolean>(false);
+  const [isLoadingFlashcards, setIsLoadingFlashcards] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const [customQuizTopic, setCustomQuizTopic] = useState<string>("");
@@ -57,6 +64,8 @@ export default function StudySmartsPage() {
 
   const [scrollToQuizSignal, setScrollToQuizSignal] = useState<boolean>(false);
   const quizSectionRef = useRef<HTMLDivElement>(null);
+  const flashcardsSectionRef = useRef<HTMLDivElement>(null);
+
 
   const { toast } = useToast();
 
@@ -70,6 +79,9 @@ export default function StudySmartsPage() {
         setSummary(teacherQuizData.summary);
         setQuiz(teacherQuizData.quiz);
         setDocumentName(teacherQuizData.documentName);
+        // Assuming flashcards are not part of teacherQuizData for now
+        // If they were, you'd load them here too.
+        setFlashcards(null); // Reset flashcards if teacher loads a quiz
         const isTeacherDataCustom = teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:");
         setIsCustomQuizModeActive(isTeacherDataCustom);
         if (isTeacherDataCustom) {
@@ -82,6 +94,7 @@ export default function StudySmartsPage() {
             setSummary(null);
             setQuiz(null);
             setDocumentName(null);
+            setFlashcards(null);
         }
       }
     }
@@ -94,13 +107,20 @@ export default function StudySmartsPage() {
       setScrollToQuizSignal(false);
     }
   }, [scrollToQuizSignal]);
+  
+  useEffect(() => {
+    if (flashcardsSectionRef.current && flashcards && flashcards.length > 0) {
+        flashcardsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [flashcards]);
+
 
   const resetDocumentState = () => {
     setDocumentName(null);
     setDocumentText("");
     setIsFileUploaded(false);
     setError(null);
-    // Reset summary options for document processing
+    setFlashcards(null);
     setSummaryLength('medium');
     setSummaryFocus('');
     if (!(currentUser?.role === 'teacher' && teacherQuizData) && !isCustomQuizModeActive) {
@@ -114,10 +134,10 @@ export default function StudySmartsPage() {
         setError(null);
         setSummary(null); 
         setQuiz(null);    
+        setFlashcards(null);
         setDocumentName(null);
         setDocumentText("");
         setIsFileUploaded(false);
-        // Clear doc-specific summary options
         setSummaryLength('medium');
         setSummaryFocus('');
     }
@@ -128,6 +148,7 @@ export default function StudySmartsPage() {
     if (isCustomQuizModeActive) { 
       setCustomQuizTopic("");
       setError(null);
+      setFlashcards(null);
       if (!(currentUser?.role === 'teacher' && teacherQuizData)) {
         setSummary(null);
         setQuiz(null);
@@ -199,6 +220,7 @@ export default function StudySmartsPage() {
     setError(null);
     setSummary(null); 
     setQuiz(null);    
+    setFlashcards(null);
     setIsLoadingSummary(true);
     setIsLoadingQuiz(false); 
     const currentDocName = documentName || "Uploaded Document"; 
@@ -209,7 +231,7 @@ export default function StudySmartsPage() {
       const summaryResult = await summarizeDocument({ 
         documentText,
         summaryLength: summaryLength,
-        summaryFocus: summaryFocus || undefined // Pass undefined if empty
+        summaryFocus: summaryFocus || undefined
       });
       setSummary(summaryResult);
       toast({ title: "Summary Generated" });
@@ -255,6 +277,7 @@ export default function StudySmartsPage() {
     setError(null);
     setSummary(null); 
     setQuiz(null);    
+    setFlashcards(null);
     setIsLoadingQuiz(true);
     setIsLoadingSummary(false); 
     
@@ -265,7 +288,7 @@ export default function StudySmartsPage() {
     try {
       const customQuizResult = await generateCustomQuiz({ topic: customQuizTopic, numQuestions: customNumQuestions });
       const placeholderSummary: SummarizeDocumentOutput = { 
-        summary: `This quiz is based on the topic: "${customQuizTopic}". No detailed document summary is available for custom quizzes.`, 
+        summary: `This quiz is based on the topic: "${customQuizTopic}". No detailed document summary is available for custom quizzes. Study aids for custom quizzes focus primarily on the quiz itself.`, 
         sectionSummaries: undefined 
       };
       setQuiz(customQuizResult); 
@@ -284,12 +307,34 @@ export default function StudySmartsPage() {
       setIsLoadingQuiz(false);
     }
   };
+  
+  const handleGenerateFlashcards = async () => {
+    if (!effectiveSummary?.summary || effectiveIsCustomQuizMode) {
+      toast({ variant: "destructive", title: "Cannot Generate Flashcards", description: "Flashcards can only be generated from a document summary." });
+      return;
+    }
+    setFlashcards(null);
+    setIsLoadingFlashcards(true);
+    toast({ title: "Generating Flashcards...", description: `Extracting key terms from summary.` });
+    try {
+      const result = await generateFlashcards({ summaryText: effectiveSummary.summary });
+      setFlashcards(result.flashcards);
+      toast({ title: "Flashcards Generated!" });
+    } catch (flashcardError: any) {
+      setError("Failed to generate flashcards: " + (flashcardError.message || "Unknown error"));
+      toast({ variant: "destructive", title: "Flashcard Error", description: "Flashcard generation failed."});
+    } finally {
+      setIsLoadingFlashcards(false);
+    }
+  };
+
 
   const handleClearActiveQuiz = () => {
     if (currentUser?.role === 'teacher') {
         clearTeacherQuizData();
         setSummary(null);
         setQuiz(null);
+        setFlashcards(null);
         setDocumentName(null);
         setIsCustomQuizModeActive(false); 
         setCustomQuizTopic("");
@@ -315,6 +360,7 @@ export default function StudySmartsPage() {
   const totalLoadingProgress = () => {
     if (isPdfProcessing && !isCustomQuizModeActive) return 15;
     if (isLoadingSummary && !summary && !isCustomQuizModeActive) return 30; 
+    if (isLoadingFlashcards && !flashcards && !isCustomQuizModeActive) return 50;
     if (isLoadingQuiz) return 75; 
     if ((summary && quiz && !isCustomQuizModeActive) || (quiz && isCustomQuizModeActive && summary )) return 100;
     return 0;
@@ -348,6 +394,10 @@ export default function StudySmartsPage() {
                     <p>Your assigned quiz is available on the Student page.</p>
                 </CardContent>
             </Card>
+             <footer className="w-full text-center p-4 mt-8">
+                <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+                <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
+            </footer>
         </main>
     )
   }
@@ -424,7 +474,7 @@ export default function StudySmartsPage() {
               <Button 
                 type="submit" 
                 className="w-full text-white font-semibold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
-                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary || customQuizTopic.trim() === ""}
+                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary || isLoadingFlashcards || customQuizTopic.trim() === ""}
               >
                 {isLoadingQuiz && isCustomQuizModeActive ? ( 
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -549,7 +599,7 @@ export default function StudySmartsPage() {
               <Button 
                 type="submit" 
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizModeActive || (documentText.trim() === "" && !isPdfProcessing)}
+                disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizModeActive || isLoadingFlashcards || (documentText.trim() === "" && !isPdfProcessing)}
               >
                 {(isLoadingSummary || (isLoadingQuiz && !isCustomQuizModeActive && !isPdfProcessing && !isCustomQuizModeActive)) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {(isPdfProcessing && !isCustomQuizModeActive) ? 'Processing File...' : 'Generate Study Aids from Document'}
@@ -566,7 +616,7 @@ export default function StudySmartsPage() {
           </Alert>
         )}
 
-        {(isLoadingSummary || isLoadingQuiz || (isPdfProcessing && !isCustomQuizModeActive)) && (
+        {(isLoadingSummary || isLoadingQuiz || (isPdfProcessing && !isCustomQuizModeActive) || isLoadingFlashcards) && (
           <Card className="shadow-lg mt-6">
             <CardHeader>
               <CardTitle>Processing...</CardTitle>
@@ -576,6 +626,7 @@ export default function StudySmartsPage() {
               <p className="text-center text-muted-foreground mt-2">
                 {isPdfProcessing && !isCustomQuizModeActive ? "Extracting text from PDF..." : ""}
                 {isLoadingSummary && !summary && !isCustomQuizModeActive ? " Generating summary..." : ""}
+                {isLoadingFlashcards && !flashcards && !isCustomQuizModeActive ? " Generating flashcards..." : ""}
                 {isLoadingQuiz && !isPdfProcessing ? " Generating quiz..." : ""}
               </p>
             </CardContent>
@@ -591,20 +642,37 @@ export default function StudySmartsPage() {
                   isLoading={isLoadingSummary}
                   isEditable={isTeacherOnline || isGuestOnline} 
                 />
+                
                 { (isTeacherOnline || isGuestOnline) && 
                   effectiveSummary && 
                   !effectiveIsCustomQuizMode && 
                   !isLoadingSummary && (
-                  <DownloadStudyAidsButton 
-                    summary={effectiveSummary}
-                    quiz={null} // Not passing quiz for summary-only download
-                    documentName={effectiveDocumentName}
-                    isCustomQuiz={false} // Not a custom quiz for summary download
-                    downloadType="summary"
-                  />
+                  <div className="mt-4 space-y-2">
+                    <DownloadStudyAidsButton 
+                        summary={effectiveSummary}
+                        quiz={null} 
+                        documentName={effectiveDocumentName}
+                        isCustomQuiz={false} 
+                        downloadType="summary"
+                    />
+                    <Button
+                      onClick={handleGenerateFlashcards}
+                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                      disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
+                    >
+                      {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
+                      Generate Flashcards
+                    </Button>
+                  </div>
                 )}
               </>
             )}
+            
+            <div ref={flashcardsSectionRef}>
+                {flashcards && flashcards.length > 0 && !isLoadingFlashcards && (isTeacherOnline || isGuestOnline) && (
+                    <FlashcardViewer flashcards={flashcards} isLoading={isLoadingFlashcards} />
+                )}
+            </div>
 
 
             {effectiveQuiz && effectiveSummary && !isLoadingQuiz && (isTeacherOnline || isGuestOnline) && (
@@ -638,3 +706,4 @@ export default function StudySmartsPage() {
     </div>
   );
 }
+

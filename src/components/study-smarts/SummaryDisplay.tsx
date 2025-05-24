@@ -5,7 +5,9 @@ import type { SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Lightbulb, Edit3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Lightbulb, Edit3, ChevronsUpDown, ArrowDownToLine, Maximize, Minimize } from "lucide-react";
+import { useState } from "react";
 
 interface SummaryDisplayProps {
   summary: SummarizeDocumentOutput;
@@ -20,6 +22,8 @@ export default function SummaryDisplay({
   isLoading, 
   isEditable = true // Default to true for teacher/guest
 }: SummaryDisplayProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const handleMainSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!isEditable) return;
     onSummaryChange({
@@ -34,6 +38,10 @@ export default function SummaryDisplay({
       ...summary,
       sectionSummaries: e.target.value,
     });
+  };
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
   };
 
   if (isLoading) {
@@ -54,11 +62,17 @@ export default function SummaryDisplay({
   
   return (
     <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center"><Lightbulb className="mr-2 h-6 w-6 text-primary" /> Document Summary</CardTitle>
-        <CardDescription>
-          {isEditable ? "Review and edit the generated summary below." : "Review the generated summary below."}
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center"><Lightbulb className="mr-2 h-6 w-6 text-primary" /> Document Summary</CardTitle>
+          <CardDescription>
+            {isEditable ? "Review and edit the generated summary below." : "Review the generated summary below."}
+          </CardDescription>
+        </div>
+        <Button onClick={toggleExpand} variant="outline" size="sm">
+          {isExpanded ? <Minimize className="mr-2 h-4 w-4" /> : <Maximize className="mr-2 h-4 w-4" />}
+          {isExpanded ? "Collapse" : "Expand"}
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -70,7 +84,7 @@ export default function SummaryDisplay({
             id="main-summary"
             value={summary.summary}
             onChange={handleMainSummaryChange}
-            rows={isEditable ? 8 : 6} // Fewer rows if not editable
+            rows={isExpanded ? 20 : (isEditable ? 8 : 6)}
             className="border-input focus:ring-primary"
             aria-label="Main summary text area"
             readOnly={!isEditable}
@@ -89,7 +103,7 @@ export default function SummaryDisplay({
                   id="section-summaries"
                   value={summary.sectionSummaries}
                   onChange={handleSectionSummariesChange}
-                  rows={isEditable ? 10 : 8} // Fewer rows if not editable
+                  rows={isExpanded ? 15 : (isEditable ? 10 : 8)}
                   className="border-input focus:ring-primary mt-2"
                   aria-label="Section summaries text area"
                   readOnly={!isEditable}
