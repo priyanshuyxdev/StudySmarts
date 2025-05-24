@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, User, Bot, Loader2, X } from 'lucide-react'; // Changed MessageSquare to Sparkles
+import { Sparkles, Send, User, Bot, Loader2 } from 'lucide-react'; // Changed MessageSquare to Sparkles
 import { chatWithBot, type ChatWithBotOutput } from '@/ai/flows/chat-flow';
 import { useToast } from '@/hooks/use-toast';
 
@@ -89,7 +89,7 @@ export default function ChatBot() {
         onClick={handleOpen}
         variant="outline"
         size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 z-50" // Removed animate-bounce
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 z-50"
         aria-label="Open Chatbot"
       >
         <Sparkles className="h-7 w-7" /> 
@@ -168,15 +168,7 @@ export default function ChatBot() {
               </Button>
             </div>
           </DialogFooter>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-            className="absolute top-3 right-3 text-muted-foreground hover:bg-muted/50"
-            aria-label="Close chat"
-           >
-            <X className="h-5 w-5" />
-          </Button>
+          {/* The manually added close button was here and has been removed. The DialogContent will provide its own. */}
         </DialogContent>
       </Dialog>
     </>
