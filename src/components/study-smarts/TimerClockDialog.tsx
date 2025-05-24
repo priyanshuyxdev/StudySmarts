@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -139,20 +140,20 @@ export default function TimerClockDialog() {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md p-6">
+        <DialogContent className="sm:max-w-md p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center text-xl">
-              <Clock className="mr-2 h-6 w-6 text-primary" /> Timer &amp; Clock
+            <DialogTitle className="flex items-center text-lg sm:text-xl">
+              <Clock className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" /> Timer &amp; Clock
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               Manage your study sessions effectively.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-4 space-y-6">
+          <div className="mt-4 space-y-4 sm:space-y-6">
             {/* Prominent Clock Display */}
             <div className="text-center">
-                <p className="text-4xl font-bold tracking-tight text-foreground">
+                <p className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
                     {currentTime || "Loading..."}
                 </p>
                 <p className="text-xs text-muted-foreground">Current Time</p>
@@ -161,11 +162,11 @@ export default function TimerClockDialog() {
 
             {/* Timer Display */}
             {timeLeft !== null && (
-              <div className="text-center my-4">
-                <p className="text-5xl font-bold tracking-tight text-primary">
+              <div className="text-center my-3 sm:my-4">
+                <p className="text-4xl sm:text-5xl font-bold tracking-tight text-primary">
                   {formatTimeLeft()}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {isTimerRunning ? "Time Remaining" : "Timer Paused"}
                 </p>
               </div>
@@ -173,7 +174,7 @@ export default function TimerClockDialog() {
 
             {/* Timer Setup */}
             {!isTimerRunning && timeLeft === null && (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <p className="text-sm font-medium text-center">Set a new timer:</p>
                 <div className="flex items-center justify-center space-x-2">
                   <div>
@@ -185,11 +186,11 @@ export default function TimerClockDialog() {
                       max="120"
                       value={timerMinutes}
                       onChange={(e) => setTimerMinutes(e.target.value)}
-                      className="w-20 text-center text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-16 sm:w-20 text-center text-base sm:text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="MM"
                     />
                   </div>
-                  <span className="text-2xl font-semibold text-muted-foreground">:</span>
+                  <span className="text-xl sm:text-2xl font-semibold text-muted-foreground">:</span>
                   <div>
                     <Label htmlFor="timer-seconds" className="sr-only">Seconds</Label>
                     <Input
@@ -199,7 +200,7 @@ export default function TimerClockDialog() {
                       max="59"
                       value={timerSeconds}
                       onChange={(e) => setTimerSeconds(e.target.value)}
-                      className="w-20 text-center text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="w-16 sm:w-20 text-center text-base sm:text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       placeholder="SS"
                     />
                   </div>
@@ -208,29 +209,29 @@ export default function TimerClockDialog() {
             )}
             
             {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-4 sm:mt-6">
               {!isTimerRunning && (
-                <Button onClick={handleSetAndStartTimer} className="w-full bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg">
-                  <Play className="mr-2 h-5 w-5" /> Set &amp; Start Timer
+                <Button onClick={handleSetAndStartTimer} className="w-full bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg text-sm sm:text-base py-2 sm:py-2.5">
+                  <Play className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Set &amp; Start Timer
                 </Button>
               )}
               {isTimerRunning && (
-                <Button onClick={handleStopTimer} variant="outline" className="w-full border-orange-500 text-orange-500 hover:bg-orange-500/10 shadow-sm hover:shadow">
-                  <Square className="mr-2 h-5 w-5" /> Stop Timer
+                <Button onClick={handleStopTimer} variant="outline" className="w-full border-orange-500 text-orange-500 hover:bg-orange-500/10 shadow-sm hover:shadow text-sm sm:text-base py-2 sm:py-2.5">
+                  <Square className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Stop Timer
                 </Button>
               )}
-               <Button onClick={handleResetTimer} variant="outline" className="w-full shadow-sm hover:shadow">
-                  <RotateCcw className="mr-2 h-5 w-5" /> Reset Timer
+               <Button onClick={handleResetTimer} variant="outline" className="w-full shadow-sm hover:shadow text-sm sm:text-base py-2 sm:py-2.5">
+                  <RotateCcw className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" /> Reset Timer
                 </Button>
             </div>
-             <p className="text-xs text-muted-foreground text-center mt-4">
+             <p className="text-xs text-muted-foreground text-center mt-3 sm:mt-4">
                 StudySmarts will try to show a desktop notification when the timer ends.
              </p>
           </div>
 
-          <DialogFooter className="mt-6 sm:justify-start">
+          <DialogFooter className="mt-4 sm:mt-6 sm:justify-start">
             <DialogClose asChild>
-              <Button type="button" variant="ghost">
+              <Button type="button" variant="ghost" size="sm" className="text-xs sm:text-sm">
                 Close
               </Button>
             </DialogClose>
