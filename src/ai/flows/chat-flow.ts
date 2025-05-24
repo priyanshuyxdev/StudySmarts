@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A simple chatbot flow for StudySmarts.
@@ -56,7 +57,14 @@ const chatFlow = ai.defineFlow(
     outputSchema: ChatWithBotOutputSchema,
   },
   async (input: ChatWithBotInput) => {
+    // Check for the specific hardcoded question
+    if (input.userInput.toLowerCase().trim() === "how many people received heads from lakshay") {
+      return { botResponse: "69" };
+    }
+
+    // Otherwise, proceed with the AI prompt
     const {output} = await chatPrompt(input);
     return output!;
   }
 );
+
