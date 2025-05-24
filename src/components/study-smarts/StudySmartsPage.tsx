@@ -1,9 +1,8 @@
-
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2 } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,15 +13,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyContext } from '@/context/StudyContext';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
 
 import { summarizeDocument, type SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import { generateQuiz, type GenerateQuizOutput } from "@/ai/flows/generate-quiz";
@@ -74,23 +64,16 @@ export default function StudySmartsPage() {
         if (isTeacherDataCustom) {
             setCustomQuizTopic(teacherQuizData.documentName.replace(/^Custom Quiz:\s*/i, ""));
         } else {
-            setCustomQuizTopic(""); // Clear custom topic if loaded data is document-based
+            setCustomQuizTopic(""); 
         }
       } else {
-         // If teacher is logged in but no quiz data in context/localStorage, clear local component state
-         // unless custom quiz mode is being actively worked on.
          if (!isCustomQuizModeActive && !documentText && !customQuizTopic) {
             setSummary(null);
             setQuiz(null);
             setDocumentName(null);
         }
       }
-    } else if (!currentUser) { 
-        // For guests, if custom quiz mode was active, keep custom topic.
-        // If not in custom quiz mode, retain document info.
-        // This logic path is mainly for retaining guest's current work.
     }
-    // Student role doesn't directly interact with this page's state in this effect
   }, [currentUser, teacherQuizData]);
 
 
@@ -106,7 +89,6 @@ export default function StudySmartsPage() {
     setDocumentText("");
     setIsFileUploaded(false);
     setError(null);
-    // Only reset summary/quiz if not a teacher with active quiz data or not currently in custom quiz mode.
     if (!(currentUser?.role === 'teacher' && teacherQuizData) && !isCustomQuizModeActive) {
         setSummary(null);
         setQuiz(null);
@@ -114,7 +96,7 @@ export default function StudySmartsPage() {
   }
 
   const prepareForCustomQuizGeneration = () => {
-    if (!isCustomQuizModeActive) { // Only clear if switching TO custom quiz mode
+    if (!isCustomQuizModeActive) { 
         setError(null);
         setSummary(null); 
         setQuiz(null);    
@@ -126,11 +108,9 @@ export default function StudySmartsPage() {
   }
 
   const prepareForDocumentProcessing = () => {
-    if (isCustomQuizModeActive) { // Only clear if switching FROM custom quiz mode
+    if (isCustomQuizModeActive) { 
       setCustomQuizTopic("");
       setError(null);
-      // Do not clear summary/quiz if there's teacher data, let that persist.
-      // If no teacher data, then clear.
       if (!(currentUser?.role === 'teacher' && teacherQuizData)) {
         setSummary(null);
         setQuiz(null);
@@ -142,8 +122,8 @@ export default function StudySmartsPage() {
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    prepareForDocumentProcessing(); // Set mode to document, clear custom quiz topic
-    resetDocumentState(); // Reset specific document states
+    prepareForDocumentProcessing(); 
+    resetDocumentState(); 
 
     if (file) {
       setDocumentName(file.name);
@@ -177,7 +157,7 @@ export default function StudySmartsPage() {
         reader.readAsText(file);
         toast({ title: "Text File Loaded", description: `Content from "${file.name}" loaded.`});
       } else {
-        setDocumentText(""); // Ensure this is cleared for unsupported files
+        setDocumentText(""); 
         setError("Unsupported file. Please upload PDF/text or paste content.");
         toast({ variant: "default", title: "Unsupported File", description: "Upload PDF/text or paste."});
       }
@@ -329,10 +309,6 @@ export default function StudySmartsPage() {
   
   const effectiveIsCustomQuizMode = effectiveDocumentName?.toLowerCase().startsWith("custom quiz:") ?? isCustomQuizModeActive;
 
-  const relevantStudentAttempts = studentAttempts.filter(
-    attempt => teacherQuizData && attempt.quizName === teacherQuizData.documentName
-  );
-
   const isTeacherOnline = currentUser?.role === 'teacher';
   const isStudentOnline = currentUser?.role === 'student';
   const isGuestOnline = !currentUser;
@@ -361,7 +337,7 @@ export default function StudySmartsPage() {
       <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
         { isTeacherOnline && (
              <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40">
-                <Briefcase className="h-5 w-5 text-primary" />
+                <Briefcase className="mr-2 h-5 w-5 text-primary" />
                 <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
                     {teacherQuizData 
@@ -545,13 +521,28 @@ export default function StudySmartsPage() {
         
         <div ref={quizSectionRef}>
             {effectiveSummary && !isLoadingSummary && (!isCustomQuizModeActive || effectiveIsCustomQuizMode) && (
-              <SummaryDisplay 
-                summary={effectiveSummary} 
-                onSummaryChange={handleSummaryChange} 
-                isLoading={isLoadingSummary}
-                isEditable={isTeacherOnline || isGuestOnline} 
-              />
+              <>
+                <SummaryDisplay 
+                  summary={effectiveSummary} 
+                  onSummaryChange={handleSummaryChange} 
+                  isLoading={isLoadingSummary}
+                  isEditable={isTeacherOnline || isGuestOnline} 
+                />
+                { (isTeacherOnline || isGuestOnline) && 
+                  effectiveSummary && 
+                  !effectiveIsCustomQuizMode && 
+                  !isLoadingSummary && (
+                  <DownloadStudyAidsButton 
+                    summary={effectiveSummary}
+                    quiz={null} // Not passing quiz for summary-only download
+                    documentName={effectiveDocumentName}
+                    isCustomQuiz={false} // Not a custom quiz for summary download
+                    downloadType="summary"
+                  />
+                )}
+              </>
             )}
+
 
             {effectiveQuiz && effectiveSummary && !isLoadingQuiz && (isTeacherOnline || isGuestOnline) && (
               <div className="mt-6">
@@ -573,53 +564,14 @@ export default function StudySmartsPage() {
             quiz={effectiveQuiz} 
             documentName={effectiveDocumentName}
             isCustomQuiz={effectiveIsCustomQuizMode}
+            downloadType="full"
           />
         )}
-
-        {/* Student Attempts Table - Conditionally Rendered in Teacher's View. REMOVED. */}
-        {/* {isTeacherOnline && teacherQuizData && teacherQuizData.documentName && (
-          <Card className="shadow-lg mt-8">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="mr-2 h-6 w-6 text-primary" />
-                Student Attempts for "{teacherQuizData.documentName}"
-              </CardTitle>
-              <CardDescription>
-                Scores of students who have taken this quiz. Student attempt data is cleared on page reload or when a new quiz is set by the teacher.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {relevantStudentAttempts.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Student ID</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {relevantStudentAttempts.map((attempt, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{attempt.studentId}</TableCell>
-                        <TableCell>{attempt.score} / {attempt.totalQuestions}</TableCell>
-                        <TableCell>{new Date(attempt.timestamp).toLocaleString()}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-muted-foreground">No student attempts recorded for this quiz yet.</p>
-              )}
-            </CardContent>
-          </Card>
-        )} */}
       </main>
       <footer className="w-full max-w-4xl mt-12 text-center p-4">
-        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik &amp; Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>
     </div>
   );
 }
-

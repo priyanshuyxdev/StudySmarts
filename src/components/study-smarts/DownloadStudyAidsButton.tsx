@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -10,40 +9,49 @@ import jsPDF from 'jspdf';
 import { useStudyContext } from "@/context/StudyContext";
 
 interface DownloadStudyAidsButtonProps {
-  summary: SummarizeDocumentOutput | null; 
+  summary: SummarizeDocumentOutput | null;
   quiz: GenerateQuizOutput | null;
   documentName: string | null;
   isCustomQuiz?: boolean;
+  downloadType: 'summary' | 'full';
 }
 
-export default function DownloadStudyAidsButton({ summary: propSummary, quiz: propQuiz, documentName: propDocumentName, isCustomQuiz = false }: DownloadStudyAidsButtonProps) {
+export default function DownloadStudyAidsButton({
+  summary: propSummary,
+  quiz: propQuiz,
+  documentName: propDocumentName,
+  isCustomQuiz = false,
+  downloadType,
+}: DownloadStudyAidsButtonProps) {
   const { toast } = useToast();
   const { currentUser, teacherQuizData } = useStudyContext();
 
   const summaryToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.summary : propSummary;
   const quizToUse = currentUser?.role === 'student' && teacherQuizData ? teacherQuizData.quiz : propQuiz;
-  const documentNameToUse = currentUser?.role === 'student' && teacherQuizData 
-    ? teacherQuizData.documentName 
+  const documentNameToUse = currentUser?.role === 'student' && teacherQuizData
+    ? teacherQuizData.documentName
     : (propDocumentName || (isCustomQuiz ? "Custom Quiz" : "Study Aids"));
 
-  const isCustomQuizEffective = currentUser?.role === 'student' && teacherQuizData 
-    ? teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:") 
+  const isCustomQuizEffective = currentUser?.role === 'student' && teacherQuizData
+    ? teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")
     : isCustomQuiz;
 
-
   const handleDownload = () => {
-    if ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse) {
+    const contentAvailable = (downloadType === 'summary' && summaryToUse && !isCustomQuizEffective) ||
+                             (downloadType === 'full' && ((summaryToUse && !isCustomQuizEffective) || quizToUse));
+
+    if (!contentAvailable || !documentNameToUse) {
       toast({
         variant: "destructive",
         title: "Missing Data",
-        description: "Cannot generate PDF due to missing summary, quiz, or document name.",
+        description: "Cannot generate PDF due to missing content or document name.",
       });
       return;
     }
 
     toast({
       title: "Generating PDF...",
-      description: `Preparing study aids for "${documentNameToUse}". This may take a moment.`,
+      description: `Preparing ${downloadType === 'summary' ? 'summary' : 'study aids'} for "${documentNameToUse}". This may take a moment.`,
     });
 
     try {
@@ -54,79 +62,66 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
       const margin = 15;
       const maxLineWidth = pageWidth - margin * 2;
 
-      const addTextWithBreaks = (text: string, x: number, y: number, options?: any) => {
+      const addWrappedText = (text: string, x: number, currentY: number, options?: any): number => {
+        doc.setFontSize(options?.fontSize || 11);
         const lines = doc.splitTextToSize(text, maxLineWidth);
-        doc.text(lines, x, y, options);
-        return y + (lines.length * (options?.fontSize ? options.fontSize * 0.35 : 7)); 
+        // Calculate line height based on current font size. Default line height factor in jsPDF is 1.15
+        const lineHeight = doc.getFontSize() * (options?.lineHeightFactor || 1.15) / doc.internal.scaleFactor ;
+
+        if (currentY + (lines.length * lineHeight) > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+        doc.text(lines, x, currentY, options);
+        return currentY + (lines.length * lineHeight) + (options?.marginBottom || 0);
       };
+      
+      let pdfTitle = "";
+      if (downloadType === 'summary') {
+        pdfTitle = `Summary for: ${documentNameToUse.replace(/^Custom Quiz:\s*/i, "")}`;
+      } else { // full
+        pdfTitle = documentNameToUse.startsWith("Custom Quiz: ")
+          ? documentNameToUse
+          : `Study Aids for: ${documentNameToUse}`;
+      }
+      yPosition = addWrappedText(pdfTitle, margin, yPosition, { fontSize: 18, marginBottom: 10 });
 
-      doc.setFontSize(18);
-      const titleBase = documentNameToUse.startsWith("Custom Quiz: ") 
-        ? documentNameToUse 
-        : `Study Aids for: ${documentNameToUse}`;
-      yPosition = addTextWithBreaks(titleBase, margin, yPosition, {fontSize: 18});
-      yPosition += 10;
 
-      if (!isCustomQuizEffective && summaryToUse?.summary) {
-        doc.setFontSize(16);
-        yPosition = addTextWithBreaks("SUMMARY", margin, yPosition, {fontSize: 16});
-        yPosition += 5;
-        doc.setFontSize(11);
-        yPosition = addTextWithBreaks(summaryToUse.summary, margin, yPosition, {fontSize: 11});
-        yPosition += 7;
+      // Summary Section
+      if ((downloadType === 'summary' || downloadType === 'full') && summaryToUse?.summary && !isCustomQuizEffective) {
+        yPosition = addWrappedText("SUMMARY", margin, yPosition, { fontSize: 16, marginBottom: 5 });
+        yPosition = addWrappedText(summaryToUse.summary, margin, yPosition, { fontSize: 11, marginBottom: 7 });
 
         if (summaryToUse.sectionSummaries) {
-          doc.setFontSize(14);
-          yPosition = addTextWithBreaks("Section Summaries:", margin, yPosition, {fontSize: 14});
-          yPosition += 5;
-          doc.setFontSize(11);
-          yPosition = addTextWithBreaks(summaryToUse.sectionSummaries, margin, yPosition, {fontSize: 11});
-          yPosition += 7;
+          yPosition = addWrappedText("Section Summaries:", margin, yPosition, { fontSize: 14, marginBottom: 5 });
+          yPosition = addWrappedText(summaryToUse.sectionSummaries, margin, yPosition, { fontSize: 11, marginBottom: 7 });
         }
       }
 
-
-      if (yPosition > pageHeight - 40) { 
-          doc.addPage();
-          yPosition = 15;
-      }
-      doc.setFontSize(16);
-      yPosition = addTextWithBreaks("QUIZ", margin, yPosition, {fontSize: 16});
-      yPosition += 7;
-
-      quizToUse.questions.forEach((q, i) => {
-        doc.setFontSize(12);
-        const questionText = `Q${i+1}: ${q.question}`;
-        
-        const questionLines = doc.splitTextToSize(questionText, maxLineWidth);
-        let optionsHeight = 0;
-        q.options.forEach(opt => {
-            optionsHeight += doc.splitTextToSize(opt, maxLineWidth - 5).length * 5; // Approx line height
-        });
-        const reasonLines = doc.splitTextToSize(`Reason: ${q.reason}`, maxLineWidth);
-        const estimatedHeight = (questionLines.length * 5) + optionsHeight + (reasonLines.length * 5) + 10;
-
-        if (yPosition + estimatedHeight > pageHeight - margin) {
+      // Quiz Section
+      if (downloadType === 'full' && quizToUse) {
+        if (yPosition + 25 > pageHeight - margin) { // Check before adding quiz header (added some buffer)
             doc.addPage();
             yPosition = margin;
         }
-        
-        yPosition = addTextWithBreaks(questionText, margin, yPosition, {fontSize: 12});
-        yPosition += 2;
+        yPosition = addWrappedText("QUIZ", margin, yPosition, { fontSize: 16, marginBottom: 7 });
 
-        doc.setFontSize(11);
-        q.options.forEach((opt, oIdx) => {
-          yPosition = addTextWithBreaks(`  ${String.fromCharCode(97 + oIdx)}) ${opt}`, margin + 5, yPosition, {fontSize: 11});
-          yPosition += 1;
+        quizToUse.questions.forEach((q, i) => {
+          yPosition = addWrappedText(`Q${i + 1}: ${q.question}`, margin, yPosition, { fontSize: 12, marginBottom: 2 });
+          
+          q.options.forEach((opt, oIdx) => {
+            yPosition = addWrappedText(`  ${String.fromCharCode(97 + oIdx)}) ${opt}`, margin + 5, yPosition, { fontSize: 11, marginBottom: 1 });
+          });
+          yPosition += 2; // Extra space after options
+
+          yPosition = addWrappedText(`Reason for correct answer: ${q.reason}`, margin, yPosition, { fontSize: 11, marginBottom: 8 });
         });
-        yPosition += 2;
-        yPosition = addTextWithBreaks(`Reason for correct answer: ${q.reason}`, margin, yPosition, {fontSize: 11});
-        yPosition += 8;
-      });
+      }
 
       const safeDocumentName = documentNameToUse.replace(/[:/\\]/g, "_").replace(/\.[^/.]+$/, "");
-      const pdfFileName = `${safeDocumentName || "StudyAids"}_Generated.pdf`;
+      const pdfFileName = `${downloadType === 'summary' ? 'Summary' : 'StudyAids'}_${safeDocumentName || "Generated"}.pdf`;
       doc.save(pdfFileName);
+
       toast({
         title: "PDF Downloaded",
         description: `"${pdfFileName}" has been downloaded.`,
@@ -144,19 +139,27 @@ export default function DownloadStudyAidsButton({ summary: propSummary, quiz: pr
     }
   };
 
-  const isDisabled = ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse);
+  let buttonLabel = "";
+  let isButtonDisabled = false;
+
+  if (downloadType === 'summary') {
+    buttonLabel = "Download Summary as PDF";
+    isButtonDisabled = !summaryToUse || isCustomQuizEffective; // Disable summary download for custom quizzes or if no summary
+  } else { // 'full'
+    buttonLabel = `Download ${isCustomQuizEffective ? "Quiz" : "Summary & Quiz"} as PDF`;
+    isButtonDisabled = ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse);
+  }
+
 
   return (
-    <Button 
-        onClick={handleDownload} 
-        className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
-        aria-label="Download study aids as PDF"
-        disabled={isDisabled}
+    <Button
+      onClick={handleDownload}
+      className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
+      aria-label={buttonLabel}
+      disabled={isButtonDisabled}
     >
       <Download className="mr-2 h-5 w-5" />
-      Download {isCustomQuizEffective ? "Quiz" : "Summary & Quiz"} as PDF
+      {buttonLabel}
     </Button>
   );
 }
-
-    
