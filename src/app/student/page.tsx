@@ -9,8 +9,6 @@ import DownloadStudyAidsButton from '@/components/study-smarts/DownloadStudyAids
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, CheckCircle, Loader2, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ChatBot from '@/components/study-smarts/ChatBot';
-import TimerClockDialog from '@/components/study-smarts/TimerClockDialog';
 
 
 export default function StudentPage() {
@@ -78,8 +76,6 @@ export default function StudentPage() {
           <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
           <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
         </footer>
-        <ChatBot />
-        <TimerClockDialog />
       </div>
     );
   }
@@ -121,8 +117,6 @@ export default function StudentPage() {
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
       </footer>
-      <ChatBot />
-      <TimerClockDialog />
     </div>
   );
 }
