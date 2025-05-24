@@ -8,6 +8,7 @@ import { Home, User, Briefcase, LogOut, BookOpenCheck, Sun, Moon } from 'lucide-
 import { Button } from '@/components/ui/button';
 import AuthModal from '@/components/auth/AuthModal';
 import { useStudyContext } from '@/context/StudyContext';
+import { cn } from '@/lib/utils';
 
 export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -18,7 +19,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const initialTheme = storedTheme || 'light';
+    const initialTheme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     setTheme(initialTheme);
     if (initialTheme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -45,64 +46,105 @@ export default function Navbar() {
       setAuthRole(role);
       setIsAuthModalOpen(true);
     } else if (currentUser.role !== role) {
-      logoutUser(); // Log out if switching roles needing auth
+      logoutUser(); 
       setAuthRole(role);
       setIsAuthModalOpen(true);
     }
-    // If already logged in as this role, specific navigation handled by Link href or current page
   };
 
   const isHomeActive = pathname === '/';
   const isStudentActive = pathname === '/student';
+  // Teacher is active on '/' if logged in as teacher
   const isTeacherActive = pathname === '/' && currentUser?.role === 'teacher';
+
+
+  const navLinkClasses = "transition-all duration-200 ease-in-out text-sm sm:text-base px-2 sm:px-3";
+  const inactiveNavLinkHoverClasses = "hover:bg-primary/5 hover:text-primary dark:hover:bg-primary/10 dark:hover:text-primary";
+  const activeNavLinkClasses = "shadow-sm";
 
 
   return (
     <>
-      <nav className="bg-card shadow-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link href="/" className="flex items-center text-xl font-bold text-primary hover:text-primary/80">
+      <nav className="bg-card shadow-md sticky top-0 z-50 border-b border-border/60">
+        <div className="container mx-auto px-4 py-2.5 flex justify-between items-center">
+          <Link href="/" className="flex items-center text-xl font-bold text-primary hover:text-primary/70 transition-colors duration-150 ease-in-out">
             <BookOpenCheck className="mr-2 h-7 w-7" />
             StudySmarts
           </Link>
 
           <div className="space-x-1 sm:space-x-2 flex items-center">
             <Link href="/" passHref>
-              <Button variant={isHomeActive && !(isTeacherActive && currentUser?.role === 'teacher') ? "secondary" : "ghost"} className="flex items-center text-sm sm:text-base px-2 sm:px-3">
+              <Button 
+                variant={isHomeActive && !isTeacherActive ? "secondary" : "ghost"} 
+                className={cn(
+                  navLinkClasses,
+                  isHomeActive && !isTeacherActive ? activeNavLinkClasses : inactiveNavLinkHoverClasses
+                )}
+              >
                 <Home className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Home
               </Button>
             </Link>
             
             {currentUser?.role === 'student' ? (
                  <Link href="/student" passHref>
-                    <Button variant={isStudentActive ? "secondary" : "ghost"} className="flex items-center text-sm sm:text-base px-2 sm:px-3">
+                    <Button 
+                      variant={isStudentActive ? "secondary" : "ghost"} 
+                      className={cn(
+                        navLinkClasses,
+                        isStudentActive ? activeNavLinkClasses : inactiveNavLinkHoverClasses
+                      )}
+                    >
                         <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
                     </Button>
                  </Link>
             ) : (
-                <Button variant={isStudentActive ? "secondary" : "ghost"} onClick={() => handleAuthLinkClick('student')} className="flex items-center text-sm sm:text-base px-2 sm:px-3">
+                <Button 
+                  variant={"ghost"} 
+                  onClick={() => handleAuthLinkClick('student')} 
+                  className={cn(navLinkClasses, inactiveNavLinkHoverClasses)}
+                >
                     <User className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Student
                 </Button>
             )}
 
             {currentUser?.role === 'teacher' ? (
                  <Link href="/" passHref> 
-                    <Button variant={isTeacherActive ? "secondary" : "ghost"} className="flex items-center text-sm sm:text-base px-2 sm:px-3">
+                    <Button 
+                      variant={isTeacherActive ? "secondary" : "ghost"} 
+                      className={cn(
+                        navLinkClasses,
+                        isTeacherActive ? activeNavLinkClasses : inactiveNavLinkHoverClasses
+                      )}
+                    >
                         <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
                     </Button>
                  </Link>
             ) : (
-                <Button variant={isTeacherActive ? "secondary" : "ghost"} onClick={() => handleAuthLinkClick('teacher')} className="flex items-center text-sm sm:text-base px-2 sm:px-3">
+                <Button 
+                  variant={"ghost"} 
+                  onClick={() => handleAuthLinkClick('teacher')} 
+                  className={cn(navLinkClasses, inactiveNavLinkHoverClasses)}
+                >
                     <Briefcase className="mr-1 h-4 w-4 sm:h-5 sm:w-5" /> Teacher
                 </Button>
             )}
 
             {currentUser && (
-              <Button variant="outline" onClick={logoutUser} size="sm" className="flex items-center text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5">
+              <Button 
+                variant="outline" 
+                onClick={logoutUser} 
+                size="sm" 
+                className="flex items-center text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out"
+              >
                 <LogOut className="mr-1 h-3 w-3 sm:h-4 sm:w-4" /> Logout ({currentUser.id})
               </Button>
             )}
-            <Button onClick={toggleTheme} variant="ghost" size="icon" className="ml-1 sm:ml-2">
+            <Button 
+              onClick={toggleTheme} 
+              variant="ghost" 
+              size="icon" 
+              className="ml-1 sm:ml-2 hover:bg-accent/50 transition-colors duration-150 ease-in-out rounded-full"
+            >
               {theme === 'light' ? <Moon className="h-5 w-5 sm:h-6 sm:w-6" /> : <Sun className="h-5 w-5 sm:h-6 sm:w-6" />}
               <span className="sr-only">Toggle theme</span>
             </Button>
