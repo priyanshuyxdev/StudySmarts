@@ -87,9 +87,13 @@ export default function ChatBot() {
     <>
       <Button
         onClick={handleOpen}
-        // variant="outline" // Removed variant to allow custom background
         size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-sky-500 to-indigo-600 text-white hover:from-sky-600 hover:to-indigo-700 z-50 transition-all duration-300 ease-in-out transform hover:scale-110"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg text-white 
+                   bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 
+                   hover:from-purple-600 hover:via-pink-600 hover:to-red-600 
+                   focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 
+                   shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 
+                   z-50 transition-all duration-300 ease-in-out transform hover:scale-110"
         aria-label="Open Chatbot"
       >
         <Sparkles className="h-7 w-7" /> 
