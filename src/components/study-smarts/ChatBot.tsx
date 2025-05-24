@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, User, Bot, Loader2 } from 'lucide-react'; // Changed MessageSquare to Sparkles
+import { Sparkles, Send, User, Bot, Loader2 } from 'lucide-react';
 import { chatWithBot, type ChatWithBotOutput } from '@/ai/flows/chat-flow';
 import { useToast } from '@/hooks/use-toast';
 
@@ -87,9 +87,9 @@ export default function ChatBot() {
     <>
       <Button
         onClick={handleOpen}
-        variant="outline"
+        // variant="outline" // Removed variant to allow custom background
         size="icon"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 z-50"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-sky-500 to-indigo-600 text-white hover:from-sky-600 hover:to-indigo-700 z-50 transition-all duration-300 ease-in-out transform hover:scale-110"
         aria-label="Open Chatbot"
       >
         <Sparkles className="h-7 w-7" /> 
@@ -168,7 +168,6 @@ export default function ChatBot() {
               </Button>
             </div>
           </DialogFooter>
-          {/* The manually added close button was here and has been removed. The DialogContent will provide its own. */}
         </DialogContent>
       </Dialog>
     </>
