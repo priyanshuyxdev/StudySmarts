@@ -121,8 +121,7 @@ export default function QuizDisplay({
   };
 
   const resultsSummary = useMemo(() => {
-    if (!isEditable && !isQuizSubmittedByStudent) return []; 
-    if (isEditable && !allQuestionsAttempted) return []; 
+    if ((isEditable && !allQuestionsAttempted) || (!isEditable && !isQuizSubmittedByStudent)) return [];
 
     return quiz.questions.map((q, index) => ({
       questionNumber: index + 1,
@@ -172,7 +171,7 @@ export default function QuizDisplay({
       </CardHeader>
       <CardContent className="space-y-6">
         {quiz.questions.map((q, qIndex) => (
-          <Card key={qIndex} className="bg-card/50 p-4 shadow-md">
+          <Card key={qIndex} className="bg-card/50 p-2 sm:p-4 shadow-md">
             <div className="flex justify-between items-start mb-2">
               <Label htmlFor={`question-${qIndex}`} className="text-base font-semibold flex items-center">
                 {isEditable && <Edit3 size={16} className="mr-2 text-accent" />} 
@@ -199,7 +198,7 @@ export default function QuizDisplay({
               className="mt-1" 
               aria-label={`Question ${qIndex + 1} text`}
               readOnly={!isEditable}
-              rows={3} 
+              rows={4} 
             />
 
             {isEditable && hints[qIndex] !== undefined && ( 
@@ -226,7 +225,7 @@ export default function QuizDisplay({
                     htmlFor={`q${qIndex}-option${oIndex}`} 
                     key={oIndex}
                     className={cn(
-                      "flex items-center space-x-3 p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors",
+                      "flex items-center space-x-3 p-2 sm:p-3 border rounded-md cursor-pointer hover:bg-muted/80 transition-colors",
                       userSelections[qIndex] === option && 
                         (isEditable ? 
                           (feedback[qIndex]?.isCorrect ? "border-green-500 bg-green-50 dark:bg-green-900/30" : "border-red-500 bg-red-50 dark:bg-red-900/30")
@@ -290,40 +289,40 @@ export default function QuizDisplay({
       )}
 
       {((isEditable && allQuestionsAttempted) || (!isEditable && isQuizSubmittedByStudent)) && (
-        <CardFooter className="flex-col items-start space-y-4 p-6 border-t">
+        <CardFooter className="flex-col items-start space-y-4 p-4 sm:p-6 border-t">
           <div className="w-full">
-            <h3 className="text-xl font-semibold flex items-center mb-2">
-                <ListChecks className="mr-2 h-6 w-6 text-primary" />
+            <h3 className="text-lg sm:text-xl font-semibold flex items-center mb-2">
+                <ListChecks className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 Quiz Results
             </h3>
-            <p className="text-2xl font-bold text-foreground mb-4">
+            <p className="text-xl sm:text-2xl font-bold text-foreground mb-4">
               Your Score: {score.correct} / {score.total}
             </p>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[90px] py-2 px-3 h-10">Q #</TableHead>
-                  <TableHead className="py-2 px-3 h-10">Status</TableHead>
-                  {(!isEditable && isQuizSubmittedByStudent) && <TableHead className="py-2 px-3 h-10">Explanation</TableHead>}
+                  <TableHead className="w-[60px] sm:w-[90px] py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Q #</TableHead>
+                  <TableHead className="py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Status</TableHead>
+                  {(!isEditable && isQuizSubmittedByStudent) && <TableHead className="py-1 px-2 h-auto text-xs sm:text-sm sm:py-2 sm:px-3">Explanation</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {resultsSummary.map((result) => (
                   <TableRow key={result.questionNumber}>
-                    <TableCell className="font-medium py-2 px-3">{result.questionNumber}</TableCell>
-                    <TableCell className="py-2 px-3">
+                    <TableCell className="font-medium py-1 px-2 text-xs sm:text-sm sm:py-2 sm:px-3">{result.questionNumber}</TableCell>
+                    <TableCell className="py-1 px-2 text-xs sm:text-sm sm:py-2 sm:px-3">
                       {result.isCorrect ? (
                         <span className="flex items-center text-green-600 dark:text-green-400">
-                          <CheckCircle className="mr-1.5 h-4 w-4" /> Correct
+                          <CheckCircle className="mr-1.5 h-3 w-3 sm:h-4 sm:w-4" /> Correct
                         </span>
                       ) : (
                         <span className="flex items-center text-red-600 dark:text-red-400">
-                          <XCircle className="mr-1.5 h-4 w-4" /> Incorrect
+                          <XCircle className="mr-1.5 h-3 w-3 sm:h-4 sm:w-4" /> Incorrect
                         </span>
                       )}
                     </TableCell>
                      {(!isEditable && isQuizSubmittedByStudent) && (
-                        <TableCell className="py-2 px-3 text-xs text-muted-foreground">
+                        <TableCell className="py-1 px-2 text-xs leading-tight sm:text-sm sm:leading-normal sm:py-2 sm:px-3 text-muted-foreground">
                             {result.reason}
                         </TableCell>
                      )}
@@ -337,5 +336,7 @@ export default function QuizDisplay({
     </Card>
   );
 }
+
+    
 
     
