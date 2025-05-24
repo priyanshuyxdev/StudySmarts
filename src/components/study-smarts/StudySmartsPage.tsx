@@ -52,7 +52,6 @@ const PDFJS_WORKER_SRC = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsL
 export default function StudySmartsPage() {
   const { currentUser, setTeacherQuizData, teacherQuizData, studentAttempts, clearTeacherQuizData } = useStudyContext();
   
-  // Declare role-based boolean flags immediately after getting currentUser
   const isTeacherOnline = currentUser?.role === 'teacher';
   const isStudentOnline = currentUser?.role === 'student';
   const isGuestOnline = !currentUser;
@@ -111,25 +110,10 @@ export default function StudySmartsPage() {
       }
     } else if (isStudentOnline) {
       resetAllLocalCreationState();
-    } else { // Guest
-      // If local state is active (e.g., guest was working on something)
-      // and teacherQuizData (from localStorage) gets loaded, teacher data takes precedence if they log in.
-      // If teacher logs out, guest might see the old quiz, so we ensure reset if teacher logs out.
+    } else { 
       if (!teacherQuizData && (summary || quiz || documentName)) {
-        // This condition ensures that if a guest was creating and then a teacher logged out (clearing teacherQuizData),
-        // the guest's view is reset if they were seeing something from a previous teacher session.
-        // However, if the guest themselves was creating, their state should persist unless overwritten by a teacher logging in.
-        // This logic is complex with client-side context. The simplest is to let teacher login overwrite, 
-        // and teacher logout clears. Guest state persists until login.
       } else if (teacherQuizData && !isTeacherOnline) {
-        // If there's teacher data but user is not teacher (e.g., teacher logged out, now guest)
-        // a guest probably shouldn't see the teacher's active quiz creation UI.
-        // But if teacherQuizData is meant to be the "live quiz" for guests too, this might be different.
-        // For now, we assume guests use their own local state unless teacher logs in.
-        // If teacher data is present AND user is NOT teacher, it means teacher logged out.
-        // We reset if the current local state seems to be from that teacher session.
         if (documentName === teacherQuizData.documentName) {
-           // resetAllLocalCreationState();
         }
       }
     }
@@ -144,7 +128,7 @@ export default function StudySmartsPage() {
     setQuiz(null);
     setFlashcards(null);
     setCustomQuizTopic("");
-    setIsCustomQuizModeActive(false); // Ensure this is reset
+    setIsCustomQuizModeActive(false); 
     setSummaryLength('medium');
     setSummaryFocus('');
     setError(null);
@@ -179,8 +163,8 @@ export default function StudySmartsPage() {
     setFlashcards(null);
     setSummaryLength('medium');
     setSummaryFocus('');
-    if (!isTeacherOnline || !teacherQuizData) { // Don't clear if teacher has an active quiz, unless explicitly cleared
-      if (!isCustomQuizModeActive) { // If switching from custom quiz to doc, custom quiz state is already handled.
+    if (!isTeacherOnline || !teacherQuizData) { 
+      if (!isCustomQuizModeActive) { 
           setSummary(null);
           setQuiz(null);
       }
@@ -207,8 +191,6 @@ export default function StudySmartsPage() {
       setCustomQuizTopic("");
       setError(null);
       setFlashcards(null);
-      // If teacher has an active quiz, don't clear it when switching modes
-      // unless they are actively generating something new.
       if (!isTeacherOnline || !teacherQuizData) {
         setSummary(null);
         setQuiz(null);
@@ -392,7 +374,7 @@ export default function StudySmartsPage() {
   const handleClearActiveQuiz = () => {
     if (isTeacherOnline) {
         clearTeacherQuizData(); 
-        resetAllLocalCreationState(); // Resets local UI for the teacher
+        resetAllLocalCreationState(); 
         toast({ title: "Active Quiz Cleared", description: "No quiz is currently active for students." });
     }
   };
@@ -431,11 +413,10 @@ export default function StudySmartsPage() {
   const effectiveIsCustomQuizMode = effectiveDocumentName?.toLowerCase().startsWith("custom quiz:") ?? isCustomQuizModeActive;
 
 
-  const filteredStudentAttempts = (isTeacherOnline && teacherQuizData) 
+  const filteredStudentAttempts = (isTeacherOnline && teacherQuizData && studentAttempts) 
     ? studentAttempts.filter(attempt => attempt.quizName === teacherQuizData.documentName)
     : [];
 
-  // Conditional rendering for Student role
   if (isStudentOnline) { 
     return (
         <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto">
@@ -472,7 +453,7 @@ export default function StudySmartsPage() {
                 <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
                     {teacherQuizData 
-                        ? <>Currently active quiz for students: <strong className="text-foreground">"{teacherQuizData.documentName}"</strong>. New aids generated will replace this for students.</>
+                        ? <>Currently active quiz for students: <strong className="text-foreground">"{teacherQuizData.documentName}"</strong>. Study aids you generate here will become the active material for students.</>
                         : 'Generate study aids from a document or custom topic to make them available for students.'}
                 </AlertDescription>
                  {teacherQuizData && (
@@ -506,7 +487,7 @@ export default function StudySmartsPage() {
                     setCustomQuizTopic(e.target.value);
                     if (e.target.value.trim() !== "") {
                         prepareForCustomQuizGeneration();
-                    } else if (isCustomQuizModeActive && !effectiveQuiz && !documentText) { // Only switch off if truly empty
+                    } else if (isCustomQuizModeActive && !effectiveQuiz && !documentText) { 
                         setIsCustomQuizModeActive(false); 
                     }
                   }}
@@ -761,6 +742,48 @@ export default function StudySmartsPage() {
           />
         )}
 
+        {isTeacherOnline && teacherQuizData && (
+          <div ref={studentAttemptsSectionRef} className="mt-8">
+            <Card className="shadow-xl border-2 border-green-300 dark:border-green-700/80 rounded-xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-5 sm:p-6">
+                <CardTitle className="flex items-center text-lg sm:text-xl">
+                  <Users className="mr-2 h-6 w-6 text-green-600 dark:text-green-400" />
+                  Student Attempts for "{teacherQuizData.documentName}"
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Scores of students who have attempted this quiz. Data persists in this browser session only.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 sm:p-0"> {/* Adjusted padding for table */}
+                {filteredStudentAttempts.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student ID</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead className="text-right">Date & Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudentAttempts.map((attempt, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{attempt.studentId}</TableCell>
+                          <TableCell>{attempt.score} / {attempt.totalQuestions}</TableCell>
+                          <TableCell className="text-right">
+                            {new Date(attempt.timestamp).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="p-5 sm:p-6 text-muted-foreground text-center">No student attempts recorded for this quiz yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <ChatBot />
         <TimerClockDialog />
       </main>
@@ -771,5 +794,4 @@ export default function StudySmartsPage() {
     </div>
   );
 }
-
     
