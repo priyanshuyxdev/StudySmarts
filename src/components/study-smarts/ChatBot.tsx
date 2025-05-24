@@ -25,14 +25,14 @@ export default function ChatBot() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Scroll to bottom when new messages are added
+    // Scroll to bottom when new messages are added or loading state changes
     if (scrollAreaRef.current) {
       const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (scrollViewport) {
         scrollViewport.scrollTop = scrollViewport.scrollHeight;
       }
     }
-  }, [messages]);
+  }, [messages, isLoading]); // Added isLoading to scroll effect dependency
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -143,7 +143,7 @@ export default function ChatBot() {
               ))}
               {isLoading && (
                 <div className="flex items-center space-x-2">
-                  <Bot className="h-6 w-6 text-primary animate-pulse" />
+                  <Bot className="h-6 w-6 text-primary" />
                   <div className="max-w-[70%] rounded-lg px-3 py-2 text-sm bg-muted text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Typing...
                   </div>
@@ -167,7 +167,13 @@ export default function ChatBot() {
                 disabled={isLoading}
                 className="flex-grow"
               />
-              <Button onClick={handleSendMessage} disabled={isLoading || !inputValue.trim()} size="icon" aria-label="Send message">
+              <Button 
+                onClick={handleSendMessage} 
+                disabled={isLoading || !inputValue.trim()} 
+                size="icon" 
+                aria-label="Send message"
+                className="text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 focus:ring-2 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800"
+              >
                 {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               </Button>
             </div>
