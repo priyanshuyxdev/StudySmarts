@@ -2,12 +2,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { SummarizeDocumentOutput } from "@/ai/flows/summarize-document";
 import type { GenerateQuizOutput } from "@/ai/flows/generate-quiz";
 import jsPDF from 'jspdf';
 import { useStudyContext } from "@/context/StudyContext";
+import { cn } from "@/lib/utils";
 
 interface DownloadStudyAidsButtonProps {
   summary: SummarizeDocumentOutput | null;
@@ -15,6 +16,7 @@ interface DownloadStudyAidsButtonProps {
   documentName: string | null;
   isCustomQuiz?: boolean;
   downloadType: 'summary' | 'full';
+  className?: string;
 }
 
 export default function DownloadStudyAidsButton({
@@ -23,6 +25,7 @@ export default function DownloadStudyAidsButton({
   documentName: propDocumentName,
   isCustomQuiz = false,
   downloadType,
+  className,
 }: DownloadStudyAidsButtonProps) {
   const { toast } = useToast();
   const { currentUser, teacherQuizData } = useStudyContext();
@@ -113,11 +116,10 @@ export default function DownloadStudyAidsButton({
           });
           yPosition += 2; 
 
-          // Only include reason if not a student or if student download is explicitly allowed to have reasons (not current case)
           if (currentUser?.role !== 'student') {
             yPosition = addWrappedText(`Reason for correct answer: ${q.reason}`, margin, yPosition, { fontSize: 11, marginBottom: 8 });
           } else {
-             yPosition += 6; // Add some spacing even if reason is omitted for students
+             yPosition += 6; 
           }
         });
       }
@@ -151,14 +153,22 @@ export default function DownloadStudyAidsButton({
     isButtonDisabled = !summaryToUse || isCustomQuizEffective; 
   } else { 
     buttonLabel = `Download ${isCustomQuizEffective ? "Quiz" : "Summary & Quiz"} as PDF`;
-    isButtonDisabled = ((!summaryToUse && !isCustomQuizEffective) || !quizToUse || !documentNameToUse);
+    isButtonDisabled = (!summaryToUse && !quizToUse && !isCustomQuizEffective) || (isCustomQuizEffective && !quizToUse) || !documentNameToUse;
+
   }
 
 
   return (
     <Button
       onClick={handleDownload}
-      className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
+      className={cn(
+        "w-full",
+        downloadType === 'summary'
+          ? "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+          : "bg-accent hover:bg-accent/90 text-accent-foreground",
+        "shadow-md hover:shadow-lg transition-shadow rounded-lg py-3",
+        className
+      )}
       aria-label={buttonLabel}
       disabled={isButtonDisabled}
     >
@@ -167,5 +177,3 @@ export default function DownloadStudyAidsButton({
     </Button>
   );
 }
-
-    

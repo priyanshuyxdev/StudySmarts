@@ -104,13 +104,11 @@ export default function StudySmartsPage() {
             setCustomQuizTopic(""); 
         }
       } else {
-         // When teacherQuizData is null (cleared), reset local creation state
          resetAllLocalCreationState();
       }
     } else if (isStudentOnline) {
-      resetAllLocalCreationState(); // Students don't create, always reset their local creation state
+      resetAllLocalCreationState(); 
     }
-    // For guests, local state persists unless teacherQuizData from context is present (which it shouldn't be for a guest)
   }, [currentUser, teacherQuizData, isTeacherOnline, isStudentOnline]);
 
 
@@ -683,22 +681,22 @@ export default function StudySmartsPage() {
                   !effectiveIsCustomQuizMode && 
                   !isLoadingSummary && (
                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <DownloadStudyAidsButton 
+                      <DownloadStudyAidsButton
                         summary={effectiveSummary}
-                        quiz={null} 
+                        quiz={null}
                         documentName={effectiveDocumentName}
-                        isCustomQuiz={false} 
+                        isCustomQuiz={false}
                         downloadType="summary"
-                    />
-                    <Button
-                      onClick={handleGenerateFlashcards}
-                      className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3 h-full"
-                      disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
-                    >
-                      {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
-                      Generate Flashcards
-                    </Button>
-                  </div>
+                      />
+                      <Button
+                        onClick={handleGenerateFlashcards}
+                        className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3"
+                        disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
+                      >
+                        {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
+                        Generate Flashcards
+                      </Button>
+                    </div>
                 )}
               </>
             )}
@@ -731,19 +729,20 @@ export default function StudySmartsPage() {
             documentName={effectiveDocumentName}
             isCustomQuiz={effectiveIsCustomQuizMode}
             downloadType="full"
+            className="mt-6"
           />
         )}
 
         {isTeacherOnline && teacherQuizData && (
-          <div ref={studentAttemptsSectionRef} className="mt-8">
-            <Card key={teacherQuizData.documentName} className="shadow-xl border-2 border-green-300 dark:border-green-700/80 rounded-xl overflow-hidden">
+          <div ref={studentAttemptsSectionRef} className="mt-8" key={teacherQuizData.documentName}>
+            <Card className="shadow-xl border-2 border-green-300 dark:border-green-700/80 rounded-xl overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-5 sm:p-6">
                 <CardTitle className="flex items-center text-lg sm:text-xl">
                   <Users className="mr-2 h-6 w-6 text-green-600 dark:text-green-400" />
                   Student Attempts for "{teacherQuizData.documentName}"
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  Scores of students who have attempted this quiz. Data persists in this browser session (same browser, same computer).
+                  Scores of students who have attempted this quiz. Data persists for the current browser session on the same computer.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0 sm:p-0">
@@ -769,7 +768,7 @@ export default function StudySmartsPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <p className="p-5 sm:p-6 text-muted-foreground text-center">No student attempts recorded for this quiz yet.</p>
+                  <p className="p-5 sm:p-6 text-muted-foreground text-center">No student attempts recorded for this quiz yet in this session.</p>
                 )}
               </CardContent>
             </Card>
