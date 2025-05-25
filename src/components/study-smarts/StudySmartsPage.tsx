@@ -411,7 +411,7 @@ export default function StudySmartsPage() {
 
   if (isStudentOnline) { 
     return (
-        <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto">
+        <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto flex-grow"> {/* Added flex-grow */}
             <Card className="shadow-xl rounded-xl">
                 <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6 rounded-t-xl">
                     <CardTitle className="flex items-center text-lg sm:text-xl">
@@ -425,7 +425,7 @@ export default function StudySmartsPage() {
                     <p className="text-muted-foreground">Your assigned quiz is available on the Student page. Please navigate there to take it.</p>
                 </CardContent>
             </Card>
-             <footer className="w-full text-center p-4 mt-12">
+             <footer className="w-full text-center p-4 mt-auto">
                 <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
                 <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
             </footer>
@@ -435,7 +435,7 @@ export default function StudySmartsPage() {
 
 
   return (
-    <div className="min-h-[calc(100vh-var(--navbar-height,60px))] flex flex-col items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
+    <div className="flex flex-col flex-grow items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
       <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
         { isTeacherOnline && (
              <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-xl rounded-lg">
@@ -690,7 +690,7 @@ export default function StudySmartsPage() {
                       />
                       <Button
                         onClick={handleGenerateFlashcards}
-                        className="w-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3"
+                        className="w-full h-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3"
                         disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
                       >
                         {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
@@ -778,7 +778,7 @@ export default function StudySmartsPage() {
         <ChatBot />
         <TimerClockDialog />
       </main>
-      <footer className="w-full text-center p-4 mt-12">
+      <footer className="w-full text-center p-4 mt-auto">
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>

@@ -131,7 +131,7 @@ export default function ChatBot() {
                    hover:from-purple-600 hover:via-pink-600 hover:to-red-600 
                    focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 
                    shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 
-                   z-50 transition-all duration-300 ease-in-out transform hover:scale-110"
+                   z-49 transition-all duration-300 ease-in-out transform hover:scale-110" // Changed z-50 to z-49
         aria-label="Open Chatbot"
       >
         <Sparkles className="h-7 w-7" /> 

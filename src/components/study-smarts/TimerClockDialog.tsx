@@ -133,7 +133,7 @@ export default function TimerClockDialog() {
                    hover:from-cyan-600 hover:to-blue-700 
                    focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 
                    shadow-blue-500/50 dark:shadow-lg dark:shadow-blue-800/80 
-                   z-40 transition-all duration-300 ease-in-out transform hover:scale-110"
+                   z-48 transition-all duration-300 ease-in-out transform hover:scale-110" // Changed z-40 to z-48
         aria-label="Open Timer and Clock"
       >
         <Timer className="h-7 w-7" />

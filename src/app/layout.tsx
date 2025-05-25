@@ -28,10 +28,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}>
         <StudyProvider>
           <Navbar />
-          {children}
+          <main className="flex-grow w-full"> {/* Ensures children take up remaining space */}
+            {children}
+          </main>
           <Toaster />
         </StudyProvider>
       </body>

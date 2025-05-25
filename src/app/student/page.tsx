@@ -26,7 +26,7 @@ export default function StudentPage() {
   // If currentUser is still loading (null) and no teacherQuizData, show loading
   if (currentUser === null && !teacherQuizData) {
      return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] p-4 bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
+      <div className="flex flex-col items-center justify-center flex-grow p-4 bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
         <p className="text-lg text-muted-foreground">Loading student portal...</p>
       </div>
@@ -37,7 +37,7 @@ export default function StudentPage() {
   // but as a fallback:
   if (currentUser && currentUser.role !== 'student') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] p-4 bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
+      <div className="flex flex-col items-center justify-center flex-grow p-4 bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
         <p className="text-lg text-destructive">Access Denied. Redirecting...</p>
       </div>
@@ -47,7 +47,7 @@ export default function StudentPage() {
 
   if (!teacherQuizData) {
     return (
-      <div className="flex flex-col min-h-[calc(100vh-120px)] items-center justify-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950 p-4">
+      <div className="flex flex-col flex-grow items-center justify-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950 p-4">
         <main className="w-full max-w-2xl mx-auto space-y-6">
           <Card className="shadow-xl border-primary/50 rounded-xl">
             <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6 rounded-t-xl">
@@ -72,7 +72,7 @@ export default function StudentPage() {
             </CardContent>
           </Card>
         </main>
-         <footer className="w-full text-center p-4 mt-12">
+         <footer className="w-full text-center p-4 mt-auto">
           <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
           <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
         </footer>
@@ -81,8 +81,8 @@ export default function StudentPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-120px)] flex flex-col items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
-      <main className="w-full max-w-4xl mx-auto space-y-6 p-4 md:p-8 mt-4">
+    <div className="flex flex-col flex-grow items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
+      <main className="w-full max-w-4xl mx-auto space-y-6 p-4 md:p-8 mt-4"> {/* Removed flex-grow from here */}
         <Card className="shadow-xl rounded-xl">
            <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-5 sm:p-6 rounded-t-xl">
             <CardTitle className="flex items-center text-lg sm:text-xl">
@@ -111,9 +111,10 @@ export default function StudentPage() {
           documentName={teacherQuizData.documentName}
           isCustomQuiz={teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")}
           downloadType="full"
+          className="mt-6"
         />
       </main>
-       <footer className="w-full text-center p-4 mt-auto"> {/* Changed mt-12 to mt-auto */}
+       <footer className="w-full text-center p-4 mt-auto"> 
         <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
       </footer>
