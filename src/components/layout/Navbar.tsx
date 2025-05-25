@@ -58,21 +58,22 @@ export default function Navbar() {
   const isTeacherActive = pathname === '/' && currentUser?.role === 'teacher' && !isStudentActive;
 
 
-  const baseNavButtonClasses = "transition-all duration-200 ease-in-out text-xs sm:text-sm px-2 py-1 sm:px-3 rounded-none";
+  const baseNavButtonClasses = "transition-all duration-200 ease-in-out text-xs sm:text-sm px-1.5 py-1 sm:px-3 rounded-none"; // Reduced px-2 to px-1.5 for smallest screens
   const activeNavButtonClasses = "border-b-2 border-primary text-primary font-semibold";
   const inactiveNavButtonHoverClasses = "text-foreground hover:bg-transparent hover:border-b-2 hover:border-primary/70 hover:text-primary/80";
 
 
   return (
     <>
-      <nav className="bg-card shadow-md sticky top-0 z-40 border-b border-border/60"> {/* Changed z-50 to z-40 */}
+      <nav className="bg-card shadow-md sticky top-0 z-40 border-b border-border/60">
         <div className="container mx-auto px-2 sm:px-4 py-2.5 flex justify-between items-center"> {/* Reduced px-4 to px-2 for small screens */}
-          <Link href="/" className="flex items-center text-lg sm:text-xl font-bold text-primary hover:text-primary/70 transition-colors duration-150 ease-in-out">
-            <BookOpenCheck className="mr-1.5 h-6 w-6 sm:h-7 sm:w-7" /> {/* Adjusted icon margin */}
-            StudySmarts
+          <Link href="/" className="flex items-center text-base sm:text-xl font-bold text-primary hover:text-primary/70 transition-colors duration-150 ease-in-out">
+            <BookOpenCheck className="mr-1 h-5 w-5 sm:h-7 sm:w-7" /> {/* Adjusted icon margin & size */}
+            <span className="hidden xxs:inline sm:inline">StudySmarts</span> 
+            <span className="xxs:hidden sm:hidden">SS</span> {/* Abbreviated for very small screens */}
           </Link>
 
-          <div className="flex items-center space-x-0.5 sm:space-x-1"> {/* Reduced space for smaller screens */}
+          <div className="flex items-center space-x-0 xxs:space-x-0.5 sm:space-x-1"> {/* Reduced space for smaller screens, added xxs breakpoint */}
             <Link href="/" passHref>
               <Button 
                 variant="ghost"
@@ -81,7 +82,7 @@ export default function Navbar() {
                   isHomeActive && !isTeacherActive && !isStudentActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                 )}
               >
-                <Home className="mr-1 h-4 w-4" /> Home
+                <Home className="mr-0.5 xxs:mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden xxs:inline">Home</span>
               </Button>
             </Link>
             
@@ -94,7 +95,7 @@ export default function Navbar() {
                         isStudentActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                       )}
                     >
-                        <User className="mr-1 h-4 w-4" /> Student
+                        <User className="mr-0.5 xxs:mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden xxs:inline">Student</span>
                     </Button>
                  </Link>
             ) : (
@@ -103,7 +104,7 @@ export default function Navbar() {
                   onClick={() => handleAuthLinkClick('student')} 
                   className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses, isStudentActive ? activeNavButtonClasses : "")}
                 >
-                    <User className="mr-1 h-4 w-4" /> Student
+                    <User className="mr-0.5 xxs:mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden xxs:inline">Student</span>
                 </Button>
             )}
 
@@ -116,7 +117,7 @@ export default function Navbar() {
                         isTeacherActive ? activeNavButtonClasses : inactiveNavButtonHoverClasses
                       )}
                     >
-                        <Briefcase className="mr-1 h-4 w-4" /> Teacher
+                        <Briefcase className="mr-0.5 xxs:mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden xxs:inline">Teacher</span>
                     </Button>
                  </Link>
             ) : (
@@ -125,28 +126,30 @@ export default function Navbar() {
                   onClick={() => handleAuthLinkClick('teacher')} 
                   className={cn(baseNavButtonClasses, inactiveNavButtonHoverClasses, isTeacherActive ? activeNavButtonClasses : "")}
                 >
-                    <Briefcase className="mr-1 h-4 w-4" /> Teacher
+                    <Briefcase className="mr-0.5 xxs:mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden xxs:inline">Teacher</span>
                 </Button>
             )}
 
-            <div className="flex items-center space-x-1 sm:space-x-2 ml-1 sm:ml-2"> {/* Reduced space */}
+            <div className="flex items-center space-x-0.5 sm:space-x-1 ml-0.5 sm:ml-2"> {/* Reduced space */}
               {currentUser && (
                 <Button 
                   variant="outline" 
                   onClick={logoutUser} 
                   size="sm" 
-                  className="flex items-center text-xs px-1.5 py-1 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out rounded-md"
+                  className="flex items-center text-xs px-1 py-0.5 sm:px-3 sm:py-1.5 hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition-colors duration-150 ease-in-out rounded-md"
                 >
-                  <LogOut className="mr-1 h-3 w-3" /> <span className="hidden sm:inline">Logout ({currentUser.id})</span> <span className="sm:hidden">Logout</span>
+                  <LogOut className="mr-0.5 h-3 w-3 sm:mr-1" /> 
+                  <span className="hidden sm:inline">Logout ({currentUser.id})</span> 
+                  <span className="sm:hidden">Logout</span>
                 </Button>
               )}
               <Button 
                 onClick={toggleTheme} 
                 variant="ghost" 
                 size="icon" 
-                className="hover:bg-accent/50 transition-colors duration-150 ease-in-out rounded-full w-8 h-8 sm:w-auto sm:h-auto" /* Adjusted size for small */
+                className="hover:bg-accent/50 transition-colors duration-150 ease-in-out rounded-full w-7 h-7 sm:w-8 sm:h-8" 
               >
-                {theme === 'light' ? <Moon className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sun className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {theme === 'light' ? <Moon className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                 <span className="sr-only">Toggle theme</span>
               </Button>
             </div>
@@ -157,3 +160,4 @@ export default function Navbar() {
     </>
   );
 }
+
