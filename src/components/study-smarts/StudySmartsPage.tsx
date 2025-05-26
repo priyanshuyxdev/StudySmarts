@@ -4,7 +4,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon, Menu } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon, Menu, FileQuestion, BookMarked } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -413,7 +413,7 @@ export default function StudySmartsPage() {
 
   if (isStudentOnline) { 
     return (
-        <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto flex-grow"> {/* Added flex-grow */}
+        <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4 mx-auto flex-grow">
             <Card className="shadow-xl rounded-xl">
                 <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6 rounded-t-xl">
                     <CardTitle className="flex items-center text-lg sm:text-xl">
@@ -428,8 +428,8 @@ export default function StudySmartsPage() {
                 </CardContent>
             </Card>
              <footer className="w-full text-center p-4 mt-auto">
-                <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
-                <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
             </footer>
         </main>
     )
@@ -439,8 +439,17 @@ export default function StudySmartsPage() {
   return (
     <div className="flex flex-col flex-grow items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
       <main className="w-full max-w-4xl space-y-6 p-4 md:p-8 mt-4">
+         <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            Welcome to StudySmarts
+          </h1>
+          <p className="mt-2 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+            Your AI-powered assistant to summarize documents, generate quizzes, create flashcards, and enhance your learning experience.
+          </p>
+        </div>
+
         { isTeacherOnline && (
-             <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-xl rounded-lg">
+             <Alert variant="default" className="bg-primary/10 border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-xl rounded-lg mb-6">
                 <Briefcase className="mr-2 h-5 w-5 text-primary" />
                 <AlertTitle className="text-primary font-semibold">Teacher Mode ({currentUser.id})</AlertTitle>
                 <AlertDescription>
@@ -457,11 +466,11 @@ export default function StudySmartsPage() {
         )}
         
         {/* Main content grid for custom quiz and document processing */}
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-6"> {/* Always single column now for better mobile stacking */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-xl border-2 border-purple-300 dark:border-purple-700/80 rounded-xl overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 p-4 sm:p-6 rounded-t-xl">
-                <CardTitle className="flex items-center text-base sm:text-xl">
-                  <Wand2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
+                <CardTitle as="h2" className="flex items-center text-base sm:text-xl font-semibold">
+                  <FileQuestion className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
                   1. Create Custom Quiz by Topic
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
@@ -524,13 +533,13 @@ export default function StudySmartsPage() {
 
             <Card className="shadow-xl border-2 border-sky-300 dark:border-sky-700/80 rounded-xl overflow-hidden">
                <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-4 sm:p-6 rounded-t-xl">
-                <CardTitle className="flex items-center text-base sm:text-xl">
-                  <UploadCloud className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-sky-600 dark:text-sky-400" />
+                <CardTitle as="h2" className="flex items-center text-base sm:text-xl font-semibold">
+                  <BookMarked className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-sky-600 dark:text-sky-400" />
                   2. Process Document
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  Upload a PDF/text file for summary and quiz generation.
-                  {isTeacherOnline && " This quiz will be set for students if generated."}
+                  Upload a PDF/text file for summary, quiz, and flashcard generation.
+                  {isTeacherOnline && " This will be set for students if generated."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
@@ -611,7 +620,7 @@ export default function StudySmartsPage() {
                             prepareForDocumentProcessing(); 
                         }
                       }}
-                      rows={6} // Reduced rows for smaller screens
+                      rows={6}
                       className="border-input focus:ring-primary shadow-sm text-xs sm:text-sm"
                       readOnly={isPdfProcessing && !isCustomQuizModeActive} 
                       disabled={isCustomQuizModeActive && !documentText} 
@@ -783,15 +792,14 @@ export default function StudySmartsPage() {
           </div>
         )}
         
-        <ChatBot />
-        <TimerClockDialog />
       </main>
       <footer className="w-full text-center p-4 mt-auto">
         <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
         <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>
+      <ChatBot />
+      <TimerClockDialog />
     </div>
   );
 }
     
-

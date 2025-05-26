@@ -18,11 +18,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'StudySmarts: AI Document Summarizer & Quiz Generator',
-  description: 'Elevate your learning with StudySmarts: AI-powered document summarization, custom quiz generation, interactive flashcards, and an AI chatbot to help you understand and retain information more effectively. Process PDFs, get study aids, and test your knowledge.',
+  title: 'StudySmarts: AI Document Summarizer, Quiz Generator & Flashcards',
+  description: 'Elevate your learning with StudySmarts: AI-powered document summarization, custom quiz and flashcard generation, and an interactive AI chatbot to help you understand and retain information from PDFs and text content more effectively.',
   openGraph: {
-    title: 'StudySmarts: AI Learning Assistant',
-    description: 'AI-powered summaries, quizzes, and study tools.',
+    title: 'StudySmarts: AI Learning Assistant - Summaries, Quizzes, Flashcards',
+    description: 'Boost your study sessions with AI-powered summaries, interactive quizzes, flashcards, and helpful study tools from StudySmarts.',
     type: 'website',
     // Add a URL to your deployed site here if available
     // url: 'https://your-studysmarts-url.com',
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'StudySmarts: AI Learning Assistant',
-    description: 'AI-powered summaries, quizzes, and study tools.',
+    title: 'StudySmarts: AI Learning Assistant - Summaries, Quizzes, Flashcards',
+    description: 'Boost your study sessions with AI-powered summaries, interactive quizzes, flashcards, and helpful study tools from StudySmarts.',
     // Add a Twitter handle here if available
     // creator: '@yourTwitterHandle',
     // Add a URL to an image for Twitter cards here if available
