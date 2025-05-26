@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { StudyProvider } from '@/context/StudyContext';
 import Navbar from '@/components/layout/Navbar';
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -33,6 +34,8 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-grow w-full"> {/* Ensures children take up remaining space */}
             {children}
+            <Analytics />
+
           </main>
           <Toaster />
         </StudyProvider>
