@@ -4,7 +4,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -687,6 +687,7 @@ export default function StudySmartsPage() {
                         documentName={effectiveDocumentName}
                         isCustomQuiz={false}
                         downloadType="summary"
+                        className="w-full h-full py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                       />
                       <Button
                         onClick={handleGenerateFlashcards}
@@ -774,6 +775,24 @@ export default function StudySmartsPage() {
             </Card>
           </div>
         )}
+        
+        <div className="mt-10 py-6 border-t border-border/50 text-center">
+            <a
+                href="/project-documentation.pdf" 
+                download="StudySmarts-Project-Documentation.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <Button variant="outline" className="shadow-md hover:shadow-lg transition-shadow rounded-lg text-base">
+                    <FileDown className="mr-2 h-5 w-5" />
+                    Download Project Documentation
+                </Button>
+            </a>
+            <p className="text-xs text-muted-foreground mt-3">
+                (Note: This button links to a placeholder. You will need to replace it with your actual document.)
+            </p>
+        </div>
+
 
         <ChatBot />
         <TimerClockDialog />
@@ -786,3 +805,4 @@ export default function StudySmartsPage() {
   );
 }
     
+
