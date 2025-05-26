@@ -4,7 +4,7 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState, useEffect, useRef } from "react";
-import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon } from "lucide-react";
+import { BookOpenText, FileText, UploadCloud, Loader2, Info, AlertTriangle, Wand2, HelpCircle, UserCircle, Briefcase, Users, ListChecks, Trash2, Download, FileSliders, MessageSquareText, Layers, Maximize, Minimize, TableIcon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,7 +86,9 @@ export default function StudySmartsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
+    }
   }, []);
   
   useEffect(() => {
@@ -453,197 +455,200 @@ export default function StudySmartsPage() {
                  )}
             </Alert>
         )}
-
-        <Card className="shadow-xl border-2 border-purple-300 dark:border-purple-700/80 rounded-xl overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 p-5 sm:p-6">
-            <CardTitle className="flex items-center text-lg sm:text-xl">
-              <Wand2 className="mr-2 h-6 w-6 text-purple-600 dark:text-purple-400" />
-              1. Create Custom Quiz by Topic
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Enter a topic or phrase to generate a quiz.
-              {isTeacherOnline && " This quiz will be set for students if generated."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-5 sm:p-6">
-            <form onSubmit={handleGenerateCustomQuiz} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="custom-topic" className="text-sm font-medium">Enter Topic/Phrase</Label>
-                <Input 
-                  id="custom-topic" 
-                  placeholder="e.g., 'The Solar System' or 'Photosynthesis'"
-                  value={customQuizTopic}
-                  onChange={(e) => {
-                    setCustomQuizTopic(e.target.value);
-                    if (e.target.value.trim() !== "") {
-                        prepareForCustomQuizGeneration();
-                    } else if (isCustomQuizModeActive && !effectiveQuiz && !documentText) { 
-                        setIsCustomQuizModeActive(false); 
-                    }
-                  }}
-                  className="border-input focus:ring-purple-500 shadow-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Number of Questions</Label>
-                <RadioGroup 
-                  value={String(customNumQuestions)} 
-                  onValueChange={(value) => {
-                    setCustomNumQuestions(Number(value));
-                    if(customQuizTopic.trim() !== "") prepareForCustomQuizGeneration(); 
-                  }} 
-                  className="flex flex-wrap gap-x-4 gap-y-2"
-                >
-                  {[5, 10, 15, 20].map(num => (
-                    <div key={num} className="flex items-center space-x-2">
-                      <RadioGroupItem value={String(num)} id={`num-${num}`} />
-                      <Label htmlFor={`num-${num}`} className="cursor-pointer text-sm">{num}</Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full text-base font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
-                disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary || isLoadingFlashcards || customQuizTopic.trim() === ""}
-              >
-                {isLoadingQuiz && isCustomQuizModeActive ? ( 
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Wand2 className="mr-2 h-5 w-5" />
-                )}
-                Generate Custom Quiz
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-xl border-2 border-sky-300 dark:border-sky-700/80 rounded-xl overflow-hidden">
-           <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6">
-            <CardTitle className="flex items-center text-lg sm:text-xl">
-              <UploadCloud className="mr-2 h-6 w-6 text-sky-600 dark:text-sky-400" />
-              2. Process Document
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Alternatively, upload a PDF/text file for summary and quiz generation.
-              {isTeacherOnline && " This quiz will be set for students if generated."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-5 sm:p-6">
-            <form onSubmit={handleGenerateDocumentAids} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="file-upload" className="text-sm font-medium">Select File (PDF or .txt, .md)</Label>
-                <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} 
-                  className="file:text-primary file:font-semibold file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 hover:file:bg-primary/20 transition-colors cursor-pointer shadow-sm"
-                />
-                {isFileUploaded && !isCustomQuizModeActive && documentName && ( 
-                  <p className="text-sm text-muted-foreground flex items-center mt-1">
-                    <FileText size={16} className="mr-1" /> Selected: {documentName}
-                    {isPdfProcessing && " (Extracting text...)"}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="summary-length" className="text-sm font-medium flex items-center">
-                    <FileSliders className="mr-2 h-4 w-4 text-muted-foreground" />
-                    Summary Length
-                  </Label>
-                  <Select value={summaryLength} onValueChange={(value: SummaryLength) => {
-                    setSummaryLength(value);
-                    if (documentText.trim() !== "" && isCustomQuizModeActive) prepareForDocumentProcessing();
-                  }}
-                  disabled={isCustomQuizModeActive && !documentText}
+        
+        {/* Main content grid for custom quiz and document processing */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6"> {/* Always single column now for better mobile stacking */}
+            <Card className="shadow-xl border-2 border-purple-300 dark:border-purple-700/80 rounded-xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 p-4 sm:p-6 rounded-t-xl">
+                <CardTitle className="flex items-center text-base sm:text-xl">
+                  <Wand2 className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
+                  1. Create Custom Quiz by Topic
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Enter a topic or phrase to generate a quiz.
+                  {isTeacherOnline && " This quiz will be set for students if generated."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <form onSubmit={handleGenerateCustomQuiz} className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="custom-topic" className="text-xs sm:text-sm font-medium">Enter Topic/Phrase</Label>
+                    <Input 
+                      id="custom-topic" 
+                      placeholder="e.g., 'The Solar System'"
+                      value={customQuizTopic}
+                      onChange={(e) => {
+                        setCustomQuizTopic(e.target.value);
+                        if (e.target.value.trim() !== "") {
+                            prepareForCustomQuizGeneration();
+                        } else if (isCustomQuizModeActive && !effectiveQuiz && !documentText) { 
+                            setIsCustomQuizModeActive(false); 
+                        }
+                      }}
+                      className="border-input focus:ring-purple-500 shadow-sm text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium">Number of Questions</Label>
+                    <RadioGroup 
+                      value={String(customNumQuestions)} 
+                      onValueChange={(value) => {
+                        setCustomNumQuestions(Number(value));
+                        if(customQuizTopic.trim() !== "") prepareForCustomQuizGeneration(); 
+                      }} 
+                      className="flex flex-wrap gap-x-3 gap-y-1.5 sm:gap-x-4 sm:gap-y-2"
+                    >
+                      {[5, 10, 15, 20].map(num => (
+                        <div key={num} className="flex items-center space-x-1.5 sm:space-x-2">
+                          <RadioGroupItem value={String(num)} id={`num-${num}`} />
+                          <Label htmlFor={`num-${num}`} className="cursor-pointer text-xs sm:text-sm">{num}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full text-sm sm:text-base font-semibold text-white bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 focus:ring-4 focus:outline-none focus:ring-pink-300 dark:focus:ring-pink-800 shadow-lg shadow-pink-500/50 dark:shadow-lg dark:shadow-pink-800/80 rounded-lg py-2.5 sm:py-3 text-center transition-all duration-300 ease-in-out transform hover:scale-105"
+                    disabled={isLoadingQuiz || isPdfProcessing || isLoadingSummary || isLoadingFlashcards || customQuizTopic.trim() === ""}
                   >
-                    <SelectTrigger id="summary-length" className="w-full shadow-sm">
-                      <SelectValue placeholder="Select length" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="brief">Brief</SelectItem>
-                      <SelectItem value="medium">Medium (Default)</SelectItem>
-                      <SelectItem value="detailed">Detailed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="summary-focus" className="text-sm font-medium flex items-center">
-                    <MessageSquareText className="mr-2 h-4 w-4 text-muted-foreground" />
-                    Summary Focus (Optional)
-                  </Label>
-                  <Input 
-                    id="summary-focus"
-                    placeholder="e.g., 'key algorithms' or 'historical impact'"
-                    value={summaryFocus}
-                    onChange={(e) => {
-                      setSummaryFocus(e.target.value);
-                      if (documentText.trim() !== "" && isCustomQuizModeActive) prepareForDocumentProcessing();
-                    }}
-                    className="border-input shadow-sm"
-                    disabled={isCustomQuizModeActive && !documentText}
-                  />
-                </div>
-              </div>
+                    {isLoadingQuiz && isCustomQuizModeActive ? ( 
+                      <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    )}
+                    Generate Custom Quiz
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="document-text" className="text-sm font-medium">
-                  Document Content 
-                </Label>
-                <Textarea
-                  id="document-text"
-                  placeholder={
-                    isPdfProcessing && !isCustomQuizModeActive
-                      ? "Extracting text from PDF..." 
-                      : isFileUploaded && documentText && !isCustomQuizModeActive 
-                        ? "Text from uploaded file. You can edit it before generating aids."
-                        : isCustomQuizModeActive 
-                          ? "Custom Quiz mode is active. This section is for document processing."
-                          : "Paste document text here, or upload a file above." 
-                  }
-                  value={isCustomQuizModeActive ? "" : documentText} 
-                  onChange={(e) => {
-                    setDocumentText(e.target.value);
-                    if (e.target.value.trim() !== "" && isCustomQuizModeActive) { 
-                        prepareForDocumentProcessing(); 
-                    }
-                  }}
-                  rows={8}
-                  className="border-input focus:ring-primary shadow-sm"
-                  readOnly={isPdfProcessing && !isCustomQuizModeActive} 
-                  disabled={isCustomQuizModeActive && !documentText} 
-                />
-                 {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && documentText && !error && !isCustomQuizModeActive && (
-                    <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700 shadow-sm rounded-md">
-                        <Info className="h-4 w-4 text-green-700 dark:text-green-400" />
-                        <AlertTitle className="text-green-700 dark:text-green-400">PDF Ready</AlertTitle>
-                        <AlertDescription className="text-green-700 dark:text-green-400">
-                            PDF text extracted. You can edit it or generate study aids.
-                        </AlertDescription>
-                    </Alert>
-                )}
-                 {isFileUploaded && isPdfProcessing && !isCustomQuizModeActive && (
-                    <Alert variant="default" className="mt-2 shadow-sm rounded-md">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <AlertTitle>PDF Processing</AlertTitle>
-                        <AlertDescription>Extracting text from PDF...</AlertDescription>
-                    </Alert>
-                )}
-              </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-base font-semibold py-3 rounded-lg"
-                disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizModeActive || isLoadingFlashcards || (documentText.trim() === "" && !isPdfProcessing)}
-              >
-                {(isLoadingSummary || (isLoadingQuiz && !isCustomQuizModeActive && !isPdfProcessing && !isCustomQuizModeActive)) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {(isPdfProcessing && !isCustomQuizModeActive) ? 'Processing File...' : 'Generate Study Aids from Document'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+            <Card className="shadow-xl border-2 border-sky-300 dark:border-sky-700/80 rounded-xl overflow-hidden">
+               <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-4 sm:p-6 rounded-t-xl">
+                <CardTitle className="flex items-center text-base sm:text-xl">
+                  <UploadCloud className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-sky-600 dark:text-sky-400" />
+                  2. Process Document
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Upload a PDF/text file for summary and quiz generation.
+                  {isTeacherOnline && " This quiz will be set for students if generated."}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <form onSubmit={handleGenerateDocumentAids} className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="file-upload" className="text-xs sm:text-sm font-medium">Select File (PDF or .txt, .md)</Label>
+                    <Input id="file-upload" type="file" accept=".pdf,text/plain,.txt,.md" onChange={handleFileChange} 
+                      className="file:text-primary file:font-semibold file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-2 sm:file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 hover:file:bg-primary/20 transition-colors cursor-pointer shadow-sm text-xs sm:text-sm"
+                    />
+                    {isFileUploaded && !isCustomQuizModeActive && documentName && ( 
+                      <p className="text-xs sm:text-sm text-muted-foreground flex items-center mt-1">
+                        <FileText size={14} className="mr-1" /> Selected: {documentName}
+                        {isPdfProcessing && " (Extracting text...)"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="summary-length" className="text-xs sm:text-sm font-medium flex items-center">
+                        <FileSliders className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                        Summary Length
+                      </Label>
+                      <Select value={summaryLength} onValueChange={(value: SummaryLength) => {
+                        setSummaryLength(value);
+                        if (documentText.trim() !== "" && isCustomQuizModeActive) prepareForDocumentProcessing();
+                      }}
+                      disabled={isCustomQuizModeActive && !documentText}
+                      >
+                        <SelectTrigger id="summary-length" className="w-full shadow-sm text-xs sm:text-sm">
+                          <SelectValue placeholder="Select length" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="brief">Brief</SelectItem>
+                          <SelectItem value="medium">Medium (Default)</SelectItem>
+                          <SelectItem value="detailed">Detailed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="summary-focus" className="text-xs sm:text-sm font-medium flex items-center">
+                        <MessageSquareText className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                        Summary Focus (Optional)
+                      </Label>
+                      <Input 
+                        id="summary-focus"
+                        placeholder="e.g., 'key algorithms'"
+                        value={summaryFocus}
+                        onChange={(e) => {
+                          setSummaryFocus(e.target.value);
+                          if (documentText.trim() !== "" && isCustomQuizModeActive) prepareForDocumentProcessing();
+                        }}
+                        className="border-input shadow-sm text-xs sm:text-sm"
+                        disabled={isCustomQuizModeActive && !documentText}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="document-text" className="text-xs sm:text-sm font-medium">
+                      Document Content 
+                    </Label>
+                    <Textarea
+                      id="document-text"
+                      placeholder={
+                        isPdfProcessing && !isCustomQuizModeActive
+                          ? "Extracting text from PDF..." 
+                          : isFileUploaded && documentText && !isCustomQuizModeActive 
+                            ? "Text from uploaded file. You can edit it before generating aids."
+                            : isCustomQuizModeActive 
+                              ? "Custom Quiz mode is active. This section is for document processing."
+                              : "Paste document text here, or upload a file above." 
+                      }
+                      value={isCustomQuizModeActive ? "" : documentText} 
+                      onChange={(e) => {
+                        setDocumentText(e.target.value);
+                        if (e.target.value.trim() !== "" && isCustomQuizModeActive) { 
+                            prepareForDocumentProcessing(); 
+                        }
+                      }}
+                      rows={6} // Reduced rows for smaller screens
+                      className="border-input focus:ring-primary shadow-sm text-xs sm:text-sm"
+                      readOnly={isPdfProcessing && !isCustomQuizModeActive} 
+                      disabled={isCustomQuizModeActive && !documentText} 
+                    />
+                     {isFileUploaded && !isPdfProcessing && documentName?.endsWith('.pdf') && documentText && !error && !isCustomQuizModeActive && (
+                        <Alert variant="default" className="mt-2 bg-green-50 border-green-300 dark:bg-green-900/30 dark:border-green-700 shadow-sm rounded-md text-xs sm:text-sm">
+                            <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-700 dark:text-green-400" />
+                            <AlertTitle className="text-green-700 dark:text-green-400">PDF Ready</AlertTitle>
+                            <AlertDescription className="text-green-700 dark:text-green-400">
+                                PDF text extracted. You can edit it or generate study aids.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                     {isFileUploaded && isPdfProcessing && !isCustomQuizModeActive && (
+                        <Alert variant="default" className="mt-2 shadow-sm rounded-md text-xs sm:text-sm">
+                            <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                            <AlertTitle>PDF Processing</AlertTitle>
+                            <AlertDescription>Extracting text from PDF...</AlertDescription>
+                        </Alert>
+                    )}
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow text-sm sm:text-base font-semibold py-2.5 sm:py-3 rounded-lg"
+                    disabled={isLoadingSummary || isLoadingQuiz || isPdfProcessing || isCustomQuizModeActive || isLoadingFlashcards || (documentText.trim() === "" && !isPdfProcessing)}
+                  >
+                    {(isLoadingSummary || (isLoadingQuiz && !isCustomQuizModeActive && !isPdfProcessing && !isCustomQuizModeActive)) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {(isPdfProcessing && !isCustomQuizModeActive) ? 'Processing File...' : 'Generate Study Aids from Document'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+        </div>
         
         {error && (
-          <Alert variant="destructive" className="my-4 shadow-md rounded-lg">
-              <AlertTriangle className="h-4 w-4" />
+          <Alert variant="destructive" className="my-4 shadow-md rounded-lg text-xs sm:text-sm">
+              <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -651,12 +656,12 @@ export default function StudySmartsPage() {
 
         {(isLoadingSummary || isLoadingQuiz || (isPdfProcessing && !isCustomQuizModeActive) || isLoadingFlashcards) && (
           <Card className="shadow-lg mt-6 rounded-xl">
-            <CardHeader>
-              <CardTitle>Processing...</CardTitle>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Processing...</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <Progress value={totalLoadingProgress()} className="w-full" />
-              <p className="text-center text-muted-foreground mt-2 text-sm">
+              <p className="text-center text-muted-foreground mt-2 text-xs sm:text-sm">
                 {isPdfProcessing && !isCustomQuizModeActive ? "Extracting text from PDF..." : ""}
                 {isLoadingSummary && !summary && !isCustomQuizModeActive ? " Generating summary..." : ""}
                 {isLoadingFlashcards && !flashcards && !isCustomQuizModeActive ? " Generating flashcards..." : ""}
@@ -680,21 +685,21 @@ export default function StudySmartsPage() {
                   effectiveSummary && 
                   !effectiveIsCustomQuizMode && 
                   !isLoadingSummary && (
-                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <DownloadStudyAidsButton
                         summary={effectiveSummary}
                         quiz={null}
                         documentName={effectiveDocumentName}
                         isCustomQuiz={false}
                         downloadType="summary"
-                        className="w-full h-full py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                        className="w-full h-full text-xs sm:text-sm py-2.5 sm:py-3 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                       />
                       <Button
                         onClick={handleGenerateFlashcards}
-                        className="w-full h-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3"
+                        className="w-full h-full bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg text-xs sm:text-sm py-2.5 sm:py-3"
                         disabled={isLoadingFlashcards || !effectiveSummary?.summary || effectiveIsCustomQuizMode}
                       >
-                        {isLoadingFlashcards ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Layers className="mr-2 h-4 w-4" />}
+                        {isLoadingFlashcards ? <Loader2 className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" /> : <Layers className="mr-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                         Generate Flashcards
                       </Button>
                     </div>
@@ -730,46 +735,48 @@ export default function StudySmartsPage() {
             documentName={effectiveDocumentName}
             isCustomQuiz={effectiveIsCustomQuizMode}
             downloadType="full"
-            className="mt-6"
+            className="mt-6 text-xs sm:text-sm"
           />
         )}
 
         {isTeacherOnline && teacherQuizData && (
           <div ref={studentAttemptsSectionRef} className="mt-8" key={teacherQuizData.documentName}>
             <Card className="shadow-xl border-2 border-green-300 dark:border-green-700/80 rounded-xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-5 sm:p-6">
-                <CardTitle className="flex items-center text-lg sm:text-xl">
-                  <Users className="mr-2 h-6 w-6 text-green-600 dark:text-green-400" />
+              <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-4 sm:p-6 rounded-t-xl">
+                <CardTitle className="flex items-center text-base sm:text-xl">
+                  <Users className="mr-2 h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
                   Student Attempts for "{teacherQuizData.documentName}"
                 </CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-xs sm:text-sm">
                   Scores of students who have attempted this quiz. Data persists for the current browser session on the same computer.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-0 sm:p-0">
+              <CardContent className="p-0"> {/* Remove padding for table to use full width */}
                 {filteredStudentAttempts.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student ID</TableHead>
-                        <TableHead>Score</TableHead>
-                        <TableHead className="text-right">Date & Time</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredStudentAttempts.map((attempt, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium">{attempt.studentId}</TableCell>
-                          <TableCell>{attempt.score} / {attempt.totalQuestions}</TableCell>
-                          <TableCell className="text-right">
-                            {new Date(attempt.timestamp).toLocaleString()}
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm">Student ID</TableHead>
+                          <TableHead className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm">Score</TableHead>
+                          <TableHead className="text-right px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm">Date & Time</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredStudentAttempts.map((attempt, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm">{attempt.studentId}</TableCell>
+                            <TableCell className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm">{attempt.score} / {attempt.totalQuestions}</TableCell>
+                            <TableCell className="text-right px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm">
+                              {new Date(attempt.timestamp).toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
-                  <p className="p-5 sm:p-6 text-muted-foreground text-center">No student attempts recorded for this quiz yet in this session.</p>
+                  <p className="p-4 sm:p-6 text-muted-foreground text-center text-xs sm:text-sm">No student attempts recorded for this quiz yet in this session.</p>
                 )}
               </CardContent>
             </Card>
@@ -780,8 +787,8 @@ export default function StudySmartsPage() {
         <TimerClockDialog />
       </main>
       <footer className="w-full text-center p-4 mt-auto">
-        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
-        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. All rights reserved.</p>
       </footer>
     </div>
   );

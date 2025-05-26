@@ -27,8 +27,8 @@ export default function StudentPage() {
   if (currentUser === null && !teacherQuizData) {
      return (
       <div className="flex flex-col items-center justify-center flex-grow p-4 bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-lg text-muted-foreground">Loading student portal...</p>
+        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary mb-4" />
+        <p className="text-base sm:text-lg text-muted-foreground">Loading student portal...</p>
       </div>
     );
   }
@@ -38,8 +38,8 @@ export default function StudentPage() {
   if (currentUser && currentUser.role !== 'student') {
     return (
       <div className="flex flex-col items-center justify-center flex-grow p-4 bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <p className="text-lg text-destructive">Access Denied. Redirecting...</p>
+        <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-destructive mb-4" />
+        <p className="text-base sm:text-lg text-destructive">Access Denied. Redirecting...</p>
       </div>
     );
   }
@@ -48,33 +48,33 @@ export default function StudentPage() {
   if (!teacherQuizData) {
     return (
       <div className="flex flex-col flex-grow items-center justify-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950 p-4">
-        <main className="w-full max-w-2xl mx-auto space-y-6">
+        <main className="w-full max-w-lg sm:max-w-2xl mx-auto space-y-6">
           <Card className="shadow-xl border-primary/50 rounded-xl">
-            <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-5 sm:p-6 rounded-t-xl">
-              <CardTitle className="flex items-center text-lg sm:text-xl">
-                <Smile className="mr-2 h-7 w-7 text-primary" />
+            <CardHeader className="bg-gradient-to-r from-sky-50 to-cyan-50 dark:from-sky-900/30 dark:to-cyan-900/30 p-4 sm:p-6 rounded-t-xl">
+              <CardTitle className="flex items-center text-base sm:text-xl">
+                <Smile className="mr-2 h-6 w-6 sm:h-7 sm:w-7 text-primary" />
                 No Quiz Available Yet!
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-center p-5 sm:p-6">
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="text-center p-4 sm:p-6">
+              <p className="text-muted-foreground mb-4 text-sm sm:text-base">
                 Your teacher hasn't set a quiz yet. Please check back later or enjoy your free time!
               </p>
               <img 
                 data-ai-hint="relaxing student" 
-                src="https://placehold.co/400x250.png" 
+                src="https://placehold.co/300x200.png" 
                 alt="Relaxing student illustration" 
-                className="mx-auto rounded-md shadow-md mb-6" 
+                className="mx-auto rounded-md shadow-md mb-6 w-full max-w-xs sm:max-w-sm" 
               />
-              <Button onClick={() => router.push('/')} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-3 px-6 text-base">
+              <Button onClick={() => router.push('/')} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-shadow rounded-lg py-2.5 px-5 sm:py-3 sm:px-6 text-sm sm:text-base">
                 Go to Home Page
               </Button>
             </CardContent>
           </Card>
         </main>
          <footer className="w-full text-center p-4 mt-auto">
-          <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
-          <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
         </footer>
       </div>
     );
@@ -82,20 +82,20 @@ export default function StudentPage() {
 
   return (
     <div className="flex flex-col flex-grow items-center bg-gradient-to-br from-slate-50 to-sky-100 dark:from-slate-900 dark:to-sky-950">
-      <main className="w-full max-w-4xl mx-auto space-y-6 p-4 md:p-8 mt-4"> {/* Removed flex-grow from here */}
+      <main className="w-full max-w-3xl mx-auto space-y-6 p-4 md:p-8 mt-4"> {/* Max width slightly reduced for better mobile */}
         <Card className="shadow-xl rounded-xl">
-           <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-5 sm:p-6 rounded-t-xl">
-            <CardTitle className="flex items-center text-lg sm:text-xl">
-              <CheckCircle className="mr-2 h-7 w-7 text-green-600 dark:text-green-400" />
+           <CardHeader className="bg-gradient-to-r from-green-50 to-lime-50 dark:from-green-900/30 dark:to-lime-900/30 p-4 sm:p-6 rounded-t-xl">
+            <CardTitle className="flex items-center text-base sm:text-xl">
+              <CheckCircle className="mr-2 h-6 w-6 sm:h-7 sm:w-7 text-green-600 dark:text-green-400" />
               Assigned Quiz
             </CardTitle>
-            <CardDescription className="text-sm">
+            <CardDescription className="text-xs sm:text-sm">
               This quiz, "{teacherQuizData.documentName}", has been assigned by your teacher. Please complete it. Your results will be shown at the end.
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           <QuizDisplay
             quiz={teacherQuizData.quiz}
             onQuizChange={() => {}} 
@@ -111,12 +111,12 @@ export default function StudentPage() {
           documentName={teacherQuizData.documentName}
           isCustomQuiz={teacherQuizData.documentName.toLowerCase().startsWith("custom quiz:")}
           downloadType="full"
-          className="mt-6"
+          className="mt-4 sm:mt-6 text-xs sm:text-sm"
         />
       </main>
        <footer className="w-full text-center p-4 mt-auto"> 
-        <p className="text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
-        <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
       </footer>
     </div>
   );
