@@ -19,7 +19,25 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'StudySmarts: AI Document Summarizer & Quiz Generator',
-  description: 'Upload documents, get AI summaries and quizzes with StudySmarts.',
+  description: 'Elevate your learning with StudySmarts: AI-powered document summarization, custom quiz generation, interactive flashcards, and an AI chatbot to help you understand and retain information more effectively. Process PDFs, get study aids, and test your knowledge.',
+  openGraph: {
+    title: 'StudySmarts: AI Learning Assistant',
+    description: 'AI-powered summaries, quizzes, and study tools.',
+    type: 'website',
+    // Add a URL to your deployed site here if available
+    // url: 'https://your-studysmarts-url.com',
+    // Add a URL to an image for social sharing here if available
+    // images: ['https://your-studysmarts-url.com/og-image.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'StudySmarts: AI Learning Assistant',
+    description: 'AI-powered summaries, quizzes, and study tools.',
+    // Add a Twitter handle here if available
+    // creator: '@yourTwitterHandle',
+    // Add a URL to an image for Twitter cards here if available
+    // images: ['https://your-studysmarts-url.com/twitter-image.png'],
+  },
 };
 
 export default function RootLayout({

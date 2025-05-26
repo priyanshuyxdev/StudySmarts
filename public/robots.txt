@@ -1,0 +1,12 @@
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+#
+# Allow crawling of all content
+User-agent: *
+Allow: /
+
+# Disallow crawling of specific paths if needed, for example:
+# User-agent: *
+# Disallow: /admin/
+# Disallow: /api/ # If you have API routes you don't want indexed
+
+Sitemap: /sitemap.xml
