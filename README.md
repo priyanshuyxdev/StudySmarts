@@ -1,6 +1,7 @@
 
 # StudySmarts: AI-Powered Learning Assistant (Next.js)
 
+https://studysmarts.vercel.app/
 This is a Next.js application, StudySmarts, built to help users process and understand textual information using AI-driven summaries and quizzes.
 
 ## Getting Started Locally
