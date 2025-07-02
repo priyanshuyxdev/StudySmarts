@@ -73,7 +73,7 @@ export default function StudentPage() {
           </Card>
         </main>
          <footer className="w-full text-center p-4 mt-auto">
-          <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu</p>
           <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
         </footer>
       </div>
@@ -115,7 +115,7 @@ export default function StudentPage() {
         />
       </main>
        <footer className="w-full text-center p-4 mt-auto"> 
-        <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu, Ritik & Tushar</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Made by Priyanshu</p>
         <p className="text-xs sm:text-sm text-muted-foreground">&copy; {new Date().getFullYear()} StudySmarts. Student Portal.</p>
       </footer>
     </div>
